@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>月餅預訂</title>
+  <meta name="description" content="手工月餅線上預訂 — 選內餡、加料、顆數與盒數" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans TC"', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#fdf6ec', 100: '#f9e8cf', 200: '#f0cd9c',
+              300: '#e5ac67', 400: '#d98a3d', 500: '#c26f26',
+              600: '#a2551d', 700: '#7f411a', 800: '#5f321a',
+              900: '#3f2213',
+            },
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
+</head>
+<body class="min-h-screen bg-brand-50 text-brand-900 font-sans">
+  <div class="mx-auto max-w-2xl px-4 py-8 sm:py-12">
+
+    <header class="text-center mb-8">
+      <div class="text-4xl mb-2">🥮</div>
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-wide">手工月餅預訂</h1>
+      <p class="mt-2 text-sm text-brand-700">選好內餡、加料、顆數與盒數，送出後我們會與您聯絡確認。</p>
+    </header>
+
+    <!-- 訂購表單 -->
+    <form id="orderForm" class="space-y-6">
+
+      <!-- 訂購人 -->
+      <section class="bg-white rounded-2xl shadow-sm ring-1 ring-brand-100 p-5">
+        <h2 class="font-bold text-lg mb-4 flex items-center gap-2"><span>👤</span>訂購人資訊</h2>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <label class="block">
+            <span class="text-sm font-medium">姓名 <span class="text-red-500">*</span></span>
+            <input name="customer" type="text" required autocomplete="name"
+              class="mt-1 w-full rounded-lg border-brand-200 bg-brand-50/50 focus:border-brand-500 focus:ring-brand-500" />
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium">聯絡電話 <span class="text-red-500">*</span></span>
+            <input name="phone" type="tel" required autocomplete="tel" inputmode="tel"
+              placeholder="09xx-xxx-xxx"
+              class="mt-1 w-full rounded-lg border-brand-200 bg-brand-50/50 focus:border-brand-500 focus:ring-brand-500" />
+          </label>
+        </div>
+      </section>
+
+      <!-- 取貨 -->
+      <section class="bg-white rounded-2xl shadow-sm ring-1 ring-brand-100 p-5">
+        <h2 class="font-bold text-lg mb-4 flex items-center gap-2"><span>📅</span>取貨日期與時段</h2>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <label class="block">
+            <span class="text-sm font-medium">取貨日期 <span class="text-red-500">*</span></span>
+            <input name="pickupDate" type="date" required
+              class="mt-1 w-full rounded-lg border-brand-200 bg-brand-50/50 focus:border-brand-500 focus:ring-brand-500" />
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium">取貨時段 <span class="text-red-500">*</span></span>
+            <select name="pickupSlot" required
+              class="mt-1 w-full rounded-lg border-brand-200 bg-brand-50/50 focus:border-brand-500 focus:ring-brand-500">
+              <option value="">請選擇…</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <!-- 品項 -->
+      <section class="bg-white rounded-2xl shadow-sm ring-1 ring-brand-100 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-bold text-lg flex items-center gap-2"><span>🥮</span>品項</h2>
+          <button type="button" id="addItemBtn"
+            class="text-sm font-semibold text-brand-600 hover:text-brand-800 rounded-lg px-3 py-1.5 ring-1 ring-brand-200 hover:bg-brand-50">
+            ＋ 新增品項
+          </button>
+        </div>
+        <div id="itemList" class="space-y-4"></div>
+      </section>
+
+      <!-- 備註 -->
+      <section class="bg-white rounded-2xl shadow-sm ring-1 ring-brand-100 p-5">
+        <label class="block">
+          <span class="font-bold text-lg flex items-center gap-2 mb-3"><span>📝</span>備註（可留空）</span>
+          <textarea name="note" rows="3" placeholder="例如：分兩袋、需要提袋、素食…"
+            class="w-full rounded-lg border-brand-200 bg-brand-50/50 focus:border-brand-500 focus:ring-brand-500"></textarea>
+        </label>
+      </section>
+
+      <!-- 小計 -->
+      <section class="bg-brand-100/70 rounded-2xl p-5 ring-1 ring-brand-200">
+        <h2 class="font-bold text-lg mb-3 flex items-center gap-2"><span>🧮</span>訂單摘要</h2>
+        <div id="summary" class="text-sm text-brand-800 space-y-1"></div>
+      </section>
+
+      <p id="formError" class="hidden text-sm font-medium text-red-600 bg-red-50 rounded-lg px-4 py-3"></p>
+
+      <button type="submit" id="submitBtn"
+        class="w-full rounded-xl bg-brand-600 py-3.5 text-white font-bold text-lg shadow-sm hover:bg-brand-700 active:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition">
+        送出預訂
+      </button>
+    </form>
+
+    <!-- 成功畫面 -->
+    <div id="successView" class="hidden bg-white rounded-2xl shadow-sm ring-1 ring-brand-100 p-6 text-center">
+      <div class="text-5xl mb-3">✅</div>
+      <h2 class="text-xl font-bold">預訂成功！</h2>
+      <p class="mt-2 text-sm text-brand-700">訂單編號</p>
+      <p id="successOrderId" class="text-lg font-mono font-bold text-brand-800"></p>
+      <div id="successSummary" class="mt-4 text-left text-sm bg-brand-50 rounded-xl p-4 space-y-1"></div>
+      <p class="mt-4 text-xs text-brand-500">請截圖保存此畫面，我們會盡快與您聯絡確認。</p>
+      <button type="button" id="newOrderBtn"
+        class="mt-5 rounded-xl bg-brand-600 px-6 py-2.5 text-white font-semibold hover:bg-brand-700">
+        再訂一筆
+      </button>
+    </div>
+
+    <footer class="mt-10 text-center text-xs text-brand-400">🥮 中秋月餅預訂系統</footer>
+  </div>
+
+  <!-- 品項範本 -->
+  <template id="itemTemplate">
+    <div class="item-card rounded-xl ring-1 ring-brand-200 p-4 bg-brand-50/40">
+      <div class="flex items-center justify-between mb-3">
+        <span class="item-title text-sm font-bold text-brand-700">品項 1</span>
+        <button type="button" class="remove-item text-xs text-red-500 hover:text-red-700 font-medium">刪除</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <span class="text-xs font-semibold text-brand-600">內餡</span>
+          <div class="mt-1 grid grid-cols-3 gap-2" data-group="filling">
+            <label class="chip"><input type="radio" class="sr-only" name="filling" value="紅豆" required /><span>紅豆</span></label>
+            <label class="chip"><input type="radio" class="sr-only" name="filling" value="芋頭" /><span>芋頭</span></label>
+            <label class="chip"><input type="radio" class="sr-only" name="filling" value="綠豆" /><span>綠豆</span></label>
+          </div>
+        </div>
+
+        <div>
+          <span class="text-xs font-semibold text-brand-600">加料</span>
+          <div class="mt-1 grid grid-cols-3 gap-2" data-group="topping">
+            <label class="chip"><input type="radio" class="sr-only" name="topping" value="原味" required /><span>原味</span></label>
+            <label class="chip"><input type="radio" class="sr-only" name="topping" value="鹹蛋黃" /><span>鹹蛋黃</span></label>
+            <label class="chip"><input type="radio" class="sr-only" name="topping" value="麻薯" /><span>麻薯</span></label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <span class="text-xs font-semibold text-brand-600">顆數 / 盒</span>
+            <div class="mt-1 grid grid-cols-2 gap-2" data-group="packSize">
+              <label class="chip"><input type="radio" class="sr-only" name="packSize" value="6" required /><span>六顆</span></label>
+              <label class="chip"><input type="radio" class="sr-only" name="packSize" value="12" /><span>十二顆</span></label>
+            </div>
+          </div>
+          <div>
+            <span class="text-xs font-semibold text-brand-600">盒數</span>
+            <div class="mt-1 flex items-center gap-2">
+              <button type="button" class="step-down h-9 w-9 shrink-0 rounded-lg ring-1 ring-brand-300 text-lg font-bold text-brand-700 hover:bg-brand-100">−</button>
+              <input type="number" name="boxes" value="1" min="1" max="999" inputmode="numeric"
+                class="boxes-input w-full text-center rounded-lg border-brand-200 bg-white focus:border-brand-500 focus:ring-brand-500" />
+              <button type="button" class="step-up h-9 w-9 shrink-0 rounded-lg ring-1 ring-brand-300 text-lg font-bold text-brand-700 hover:bg-brand-100">＋</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="item-line-summary mt-3 text-xs text-brand-500"></p>
+    </div>
+  </template>
+
+  <style>
+    .chip { cursor: pointer; }
+    .chip > span {
+      display: block; text-align: center; padding: 0.5rem 0.25rem;
+      border-radius: 0.5rem; font-size: 0.875rem; font-weight: 600;
+      background: #fff; color: #7f411a;
+      box-shadow: inset 0 0 0 1px #f0cd9c; transition: all .12s;
+    }
+    .chip > input:checked + span {
+      background: #c26f26; color: #fff; box-shadow: inset 0 0 0 1px #c26f26;
+    }
+    .chip > input:focus-visible + span { outline: 2px solid #a2551d; outline-offset: 2px; }
+  </style>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
