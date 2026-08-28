@@ -12,34 +12,54 @@
 
 > 目前版本不含價格計算。
 
+## 防機器人 / 防灌單
+
+公開網站，已內建多層防護（`gas/程式碼.js`）：
+
+| 層 | 作用 | 需設定 |
+|---|---|---|
+| Cloudflare Turnstile 驗證碼 | 主力，擋自動化腳本 | Site Key（`config.js`）+ Secret（Script Property `TURNSTILE_SECRET`） |
+| 蜜罐欄位 `website` | 機器人會填、真人看不到 | 免 |
+| 填表時間 < 3 秒即擋 | 擋秒送腳本 | 免 |
+| 同電話 30 秒冷卻 | 擋連續灌單 | 免 |
+| 相同內容訂單 10 分鐘去重 | 擋重複送出 | 免 |
+| 全站每分鐘 20 筆上限 | 攻擊時自動節流 | 免（可改參數） |
+| 每日總量上限（預設 500） | 爆量保險絲 | 可改 Script Property `DAILY_CAP` |
+| 每筆訂單寄信通知 | 即時察覺異常 | Script Property `NOTIFY_EMAIL` |
+
+**Turnstile 設定（建議做）：**
+1. <https://dash.cloudflare.com> → Turnstile → Add site，網域填 `sky104857-stack.github.io`。
+2. Site Key 貼進 `config.js` 的 `TURNSTILE_SITE_KEY`。
+3. Secret Key 設進 Apps Script：`setup()` 裡取消 `TURNSTILE_SECRET` 那行的註解並填入，或到 專案設定 → Script Properties 手動加。
+4. `clasp push` + 重新部署新版本、`git push`。
+
+> 沒設 Turnstile 也能運作，其餘各層仍有效，只是少了最強的一道。
+
 ---
 
 ## 一、後端（Google Sheets）
 
 程式碼在 `gas/程式碼.js`。用 `sky104857@gmail.com` 這個 Google 帳號。
 
-### 用 clasp 推送
+### 已經做好的部分
 
-```bash
-cd ~/Projects/月餅訂購/gas
-npx @google/clasp@latest create --type sheets --title "月餅訂購"
-npx @google/clasp@latest push
-```
+- 已建立試算表：<https://docs.google.com/spreadsheets/d/1Mbx4nTImhpsnWYtxZbunk-AbpKXsGMDDJc4OB6c8Ilc/edit>
+- 已建立綁定的 Apps Script 專案並 `clasp push` 上去。
+- 編輯器：<https://script.google.com/d/16UOMjuzkxmJeJSIuyUyp9iuwonoRWh0MVbGb_bPSEtjvjxrf4XHHXB8L/edit>
 
-`create` 會建立一份新的 Google 試算表 + 綁定的 Apps Script 專案。
+### 你要在瀏覽器手動完成（授權需要你本人點）
 
-### 首次授權 + 部署為 Web App
-
-1. `npx @google/clasp@latest open` 開啟 Apps Script 編輯器。
-2. 先把 `setup()` 裡的 `ADMIN_KEY` 字串改成自己的金鑰，存檔。
-3. 選 `setup` 函式 → 執行一次 → 跳出授權視窗，全部允許（會建立「訂單明細」分頁並寫入金鑰）。
-4. 右上「部署」→「新增部署作業」→ 類型選「網頁應用程式」：
-   - 說明：隨意
+1. 開上面的**編輯器**連結。
+2. 把 `setup()` 裡的 `ADMIN_KEY` 改成自己的金鑰；要用 Turnstile 的話一起把 `TURNSTILE_SECRET` 那行取消註解填入；要寄通知信就填 `NOTIFY_EMAIL`。存檔。
+3. 函式選 `setup` → **執行** → 跳授權視窗，全部允許（會建立「訂單明細」分頁、寫入參數）。
+4. 右上「部署」→「**管理部署作業**」（clasp 已建了一個）→ 編輯（鉛筆）：
    - 執行身分：**我（sky104857@gmail.com）**
    - 誰可以存取：**任何人**
-5. 複製產生的 Web App 網址（結尾 `/exec`）。
+   - 版本：**新版本** → 部署
+   （或直接「新增部署作業」建一個乾淨的，類型「網頁應用程式」，設定同上。）
+5. 複製 Web App 網址（結尾 `/exec`）。
 
-> 之後改了 `gas/程式碼.js`：`clasp push` 後，到「部署」→「管理部署作業」→ 編輯（鉛筆）→ 版本選「新版本」→ 部署。網址不變。
+> 之後改了 `gas/程式碼.js`：`cd gas && npx @google/clasp@latest push` → 回「管理部署作業」→ 編輯 → 版本「新版本」→ 部署。網址不變。
 
 ---
 

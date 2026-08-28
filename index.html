@@ -105,6 +105,14 @@
         <div id="summary" class="text-sm text-brand-800 space-y-1"></div>
       </section>
 
+      <!-- 蜜罐:給機器人填的假欄位,真人看不到 -->
+      <div aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;height:0;width:0;overflow:hidden;">
+        <label>請勿填寫此欄 <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+      </div>
+
+      <!-- 人機驗證(config.js 有設 TURNSTILE_SITE_KEY 才會出現) -->
+      <div id="turnstile" class="flex justify-center empty:hidden"></div>
+
       <p id="formError" class="hidden text-sm font-medium text-red-600 bg-red-50 rounded-lg px-4 py-3"></p>
 
       <button type="submit" id="submitBtn"

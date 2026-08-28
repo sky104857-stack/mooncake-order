@@ -2,6 +2,7 @@
   "use strict";
 
   var CFG = window.APP_CONFIG || {};
+  var pageLoadedAt = Date.now();
   var form = document.getElementById("orderForm");
   var itemList = document.getElementById("itemList");
   var tpl = document.getElementById("itemTemplate");
@@ -22,6 +23,34 @@
   var min = new Date();
   min.setDate(min.getDate() + lead);
   form.pickupDate.min = min.toISOString().slice(0, 10);
+
+  // ---- Cloudflare Turnstile 人機驗證(選用) --------------------------
+  var turnstileToken = "";
+  var turnstileWidgetId = null;
+  if (CFG.TURNSTILE_SITE_KEY) {
+    window.__tsCallback = function (token) { turnstileToken = token; };
+    window.__tsExpired = function () { turnstileToken = ""; };
+    window.onloadTurnstileCallback = function () {
+      turnstileWidgetId = window.turnstile.render("#turnstile", {
+        sitekey: CFG.TURNSTILE_SITE_KEY,
+        callback: window.__tsCallback,
+        "expired-callback": window.__tsExpired,
+        "error-callback": window.__tsExpired,
+      });
+    };
+    var s = document.createElement("script");
+    s.src =
+      "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback";
+    s.async = true;
+    s.defer = true;
+    document.head.appendChild(s);
+  }
+  function resetTurnstile() {
+    turnstileToken = "";
+    if (turnstileWidgetId !== null && window.turnstile) {
+      window.turnstile.reset(turnstileWidgetId);
+    }
+  }
 
   // ---- 品項卡片 -------------------------------------------------------
   function renumber() {
@@ -145,6 +174,11 @@
     });
     if (bad) return;
 
+    if (CFG.TURNSTILE_SITE_KEY && !turnstileToken) {
+      showError("請先完成下方的人機驗證。");
+      return;
+    }
+
     var payload = {
       customer: form.customer.value.trim(),
       phone: form.phone.value.trim(),
@@ -152,6 +186,9 @@
       pickupSlot: form.pickupSlot.value,
       note: form.note.value.trim(),
       items: items,
+      website: form.website.value,          // 蜜罐,正常為空
+      elapsedMs: Date.now() - pageLoadedAt,  // 填表耗時
+      turnstileToken: turnstileToken,
     };
 
     submitBtn.disabled = true;
@@ -172,6 +209,7 @@
           showSuccess(data, payload);
         } else {
           showError((data && data.error) || "送出失敗，請稍後再試。");
+          resetTurnstile();
           resetSubmit();
         }
       })
