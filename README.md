@@ -12,28 +12,23 @@
 
 > 目前版本不含價格計算。
 
-## 防機器人 / 防灌單
+## 防機器人 / 防灌單 — ✅ 全部生效
 
-公開網站，已內建多層防護（`gas/程式碼.js`）：
+公開網站，多層防護（`gas/程式碼.js`），已端對端測過：
 
-| 層 | 作用 | 需設定 |
+| 層 | 作用 | 狀態 |
 |---|---|---|
-| Cloudflare Turnstile 驗證碼 | 主力，擋自動化腳本 | Site Key（`config.js`）+ Secret（Script Property `TURNSTILE_SECRET`） |
-| 蜜罐欄位 `website` | 機器人會填、真人看不到 | 免 |
-| 填表時間 < 3 秒即擋 | 擋秒送腳本 | 免 |
-| 同電話 30 秒冷卻 | 擋連續灌單 | 免 |
-| 相同內容訂單 10 分鐘去重 | 擋重複送出 | 免 |
-| 全站每分鐘 20 筆上限 | 攻擊時自動節流 | 免（可改參數） |
-| 每日總量上限（預設 500） | 爆量保險絲 | 可改 Script Property `DAILY_CAP` |
-| 每筆訂單寄信通知 | 即時察覺異常 | Script Property `NOTIFY_EMAIL` |
+| Cloudflare Turnstile 驗證碼 | 主力，擋自動化腳本 | ✅ 已啟用（Managed 模式，前端 + 後端都驗） |
+| 蜜罐欄位 `website` | 機器人會填、真人看不到 | ✅ |
+| 填表時間 < 3 秒即擋 | 擋秒送腳本 | ✅ |
+| 同電話 30 秒冷卻 | 擋連續灌單 | ✅ |
+| 相同內容訂單 10 分鐘去重 | 擋重複送出 | ✅ |
+| 全站每分鐘 20 筆上限 | 攻擊時自動節流 | ✅（`GLOBAL_PER_MIN` 可改） |
+| 每日總量上限（預設 500） | 爆量保險絲 | ✅（Script Property `DAILY_CAP` 可改） |
+| 每筆訂單寄信通知 | 即時察覺異常 | ✅（寄到 `NOTIFY_EMAIL`） |
 
-**Turnstile 設定（建議做）：**
-1. <https://dash.cloudflare.com> → Turnstile → Add site，網域填 `sky104857-stack.github.io`。
-2. Site Key 貼進 `config.js` 的 `TURNSTILE_SITE_KEY`。
-3. Secret Key 設進 Apps Script：`setup()` 裡取消 `TURNSTILE_SECRET` 那行的註解並填入，或到 專案設定 → Script Properties 手動加。
-4. `clasp push` + 重新部署新版本、`git push`。
-
-> 沒設 Turnstile 也能運作，其餘各層仍有效，只是少了最強的一道。
+Turnstile widget：Site Key 在 `config.js` 的 `TURNSTILE_SITE_KEY`，Secret 在 Apps Script → 專案設定 → 指令碼屬性 `TURNSTILE_SECRET`。
+> ⚠️ 驗證碼容器的 `id` 是 `ts-widget`，**不要**改回 `turnstile`（會跟 `window.turnstile` 撞名，widget 就不會出現）。
 
 ---
 
@@ -55,12 +50,6 @@ cd ~/Projects/月餅訂購/gas && npx @google/clasp@latest push
 ```
 
 再到編輯器：部署 → 管理部署作業 → 編輯（鉛筆）→ 版本「建立新版本」→ 部署。**網址不變**。
-
-### 加上 Cloudflare Turnstile（建議）
-
-1. <https://dash.cloudflare.com> → Turnstile → Add site，網域 `sky104857-stack.github.io`。
-2. Site Key → 填 `config.js` 的 `TURNSTILE_SITE_KEY`，`git push`。
-3. Secret Key → 編輯器 → 專案設定 → 指令碼屬性 → 新增 `TURNSTILE_SECRET`。
 
 ---
 
