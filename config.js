@@ -7,7 +7,7 @@ window.APP_CONFIG = {
   // 到 https://dash.cloudflare.com → Turnstile → 新增網站,網域填 sky104857-stack.github.io
   // 把 Site Key 貼這裡,Secret Key 設進 Apps Script 的 Script Property「TURNSTILE_SECRET」。
   // 留空則不顯示驗證碼(仍有蜜罐 / 填表時間 / 頻率限制等其他防護)。
-  TURNSTILE_SITE_KEY: "",
+  TURNSTILE_SITE_KEY: "0x4AAAAAAEe56N3yYRuREzv2",
 
   // 取貨時段選項(可自行增減 / 改文字)
   PICKUP_SLOTS: [
