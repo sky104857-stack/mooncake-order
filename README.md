@@ -39,9 +39,16 @@ Turnstile widget：Site Key 在 `config.js` 的 `TURNSTILE_SITE_KEY`，Secret �
 - 試算表：<https://docs.google.com/spreadsheets/d/1Mbx4nTImhpsnWYtxZbunk-AbpKXsGMDDJc4OB6c8Ilc/edit>
 - Apps Script 編輯器：<https://script.google.com/d/16UOMjuzkxmJeJSIuyUyp9iuwonoRWh0MVbGb_bPSEtjvjxrf4XHHXB8L/edit>
 - Web App 已部署（執行身分＝我、存取＝任何人），網址已填進 `config.js`。
-- `setup()` 已執行：「訂單明細」分頁已建立，`ADMIN_KEY`、`NOTIFY_EMAIL` 已寫入 Script Properties。
-- **金鑰不放在這個公開 repo**，存在 Apps Script 的 Script Properties 裡。
-  要查或改：編輯器 → 左下齒輪「專案設定」→ 指令碼屬性。
+- `setup()` 已執行：「訂單明細」分頁已建立，`ADMIN_KEY`、`NOTIFY_EMAIL`、`TURNSTILE_SECRET` 已寫入 Script Properties。
+
+### 管理金鑰（`ADMIN_KEY`）
+
+- 用途：開 `admin.html` 彙總 / 製作單頁時要輸入的密碼（會存在瀏覽器本機，不用每次打）。
+- **這是一個公開 repo，金鑰的實際值不寫在程式碼或這份說明裡**，只存在 Apps Script 的 Script Properties。
+- 查看目前的值 / 更改：
+  編輯器 → 左下角齒輪「**專案設定**」→ 捲到「**指令碼屬性**」→ 編輯 `ADMIN_KEY` → 儲存。
+  改完**立即生效**（後端即時讀取，不用重新部署）；正在用舊金鑰登入過的瀏覽器要重新輸入新的。
+- ⚠️ 彙總頁網址是公開的，金鑰請用**夠長、難猜**的字串（純數字很快會被試出來）。
 
 ### 之後改了 `gas/程式碼.js` 要怎麼更新
 
@@ -55,7 +62,7 @@ cd ~/Projects/月餅訂購/gas && npx @google/clasp@latest push
 
 ## 二、前端設定 — ✅ 已設定
 
-`config.js` 的 `GAS_URL` 已填好。`admin.html` 載入時要輸入的金鑰＝ Script Property `ADMIN_KEY`（存在瀏覽器本機，不用每次打）。
+`config.js` 的 `GAS_URL`、`TURNSTILE_SITE_KEY` 已填好。`admin.html` 要輸入的管理金鑰見上面〈管理金鑰〉一節。
 
 要改取貨時段 / 最早可預約天數，改 `config.js` 的 `PICKUP_SLOTS`、`LEAD_DAYS` 再 `git push`。
 
