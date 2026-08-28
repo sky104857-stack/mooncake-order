@@ -45,7 +45,20 @@ function getSheet_() {
     sheet.appendRow(HEADERS);
     sheet.setFrozenRows(1);
   }
+  // 電話、取貨日期存純文字,避免試算表把 "0912..." 轉成數字吃掉開頭 0
+  sheet.getRange("D:E").setNumberFormat("@");
   return sheet;
+}
+
+// 清空所有訂單(只留標題列)。上線前清測試資料用,平時別執行。
+function resetOrders() {
+  const sheet = getSheet_();
+  const last = sheet.getLastRow();
+  if (last > 1) sheet.getRange(2, 1, last - 1, HEADERS.length).clearContent();
+  PropertiesService.getScriptProperties().deleteProperty(
+    "cnt_" + Utilities.formatDate(new Date(), "Asia/Taipei", "yyyy-MM-dd")
+  );
+  Logger.log("已清空訂單明細");
 }
 
 function jsonResponse_(obj) {
@@ -291,20 +304,20 @@ function doGet(e) {
 }
 
 // ---- 初始化:建立分頁 + 設定金鑰 / 參數 -------------------------------
-// 第一次部署前執行一次。改完字串再執行一次即可覆蓋。
+// 這個 repo 是公開的,真正的金鑰不寫在程式碼裡,而是存在 Script Properties。
+// 第一次執行 setup() 會建立分頁,並在「該參數還沒設定過」時填入下面的預設值;
+// 已經設定過的值不會被蓋掉。要換金鑰請直接到
+//   專案設定 → Script Properties 手動改,或用 setProp_(key, value, true)。
+function setProp_(key, value, force) {
+  const props = PropertiesService.getScriptProperties();
+  if (force || !props.getProperty(key)) props.setProperty(key, value);
+}
+
 function setup() {
   getSheet_();
-  const props = PropertiesService.getScriptProperties();
-  props.setProperty("ADMIN_KEY", "換成你自己的管理金鑰字串");
-
-  // 選填:Cloudflare Turnstile 的 Secret Key(強烈建議設,主力防機器人)
-  // props.setProperty("TURNSTILE_SECRET", "0x4AAAAAAA...");
-
-  // 選填:每筆訂單寄通知信到這個信箱
-  // props.setProperty("NOTIFY_EMAIL", "sky104857@gmail.com");
-
-  // 選填:每日訂單筆數上限(預設 500)
-  // props.setProperty("DAILY_CAP", "500");
-
-  Logger.log("完成:分頁已建立,參數已寫入 Script Properties");
+  setProp_("ADMIN_KEY", "請改成一組隨機字串");          // admin.html 讀取用
+  setProp_("NOTIFY_EMAIL", "");                          // 填信箱則每筆訂單寄通知
+  // setProp_("TURNSTILE_SECRET", "0x4AAAAAAA...");      // Cloudflare Turnstile Secret
+  // setProp_("DAILY_CAP", "500");                       // 每日訂單筆數上限
+  Logger.log("完成:分頁已建立,未設定過的參數已填入預設值");
 }

@@ -37,61 +37,47 @@
 
 ---
 
-## 一、後端（Google Sheets）
+## 一、後端（Google Sheets）— ✅ 已部署完成
 
-程式碼在 `gas/程式碼.js`。用 `sky104857@gmail.com` 這個 Google 帳號。
+程式碼在 `gas/程式碼.js`。
 
-### 已經做好的部分
+- 試算表：<https://docs.google.com/spreadsheets/d/1Mbx4nTImhpsnWYtxZbunk-AbpKXsGMDDJc4OB6c8Ilc/edit>
+- Apps Script 編輯器：<https://script.google.com/d/16UOMjuzkxmJeJSIuyUyp9iuwonoRWh0MVbGb_bPSEtjvjxrf4XHHXB8L/edit>
+- Web App 已部署（執行身分＝我、存取＝任何人），網址已填進 `config.js`。
+- `setup()` 已執行：「訂單明細」分頁已建立，`ADMIN_KEY`、`NOTIFY_EMAIL` 已寫入 Script Properties。
+- **金鑰不放在這個公開 repo**，存在 Apps Script 的 Script Properties 裡。
+  要查或改：編輯器 → 左下齒輪「專案設定」→ 指令碼屬性。
 
-- 已建立試算表：<https://docs.google.com/spreadsheets/d/1Mbx4nTImhpsnWYtxZbunk-AbpKXsGMDDJc4OB6c8Ilc/edit>
-- 已建立綁定的 Apps Script 專案並 `clasp push` 上去。
-- 編輯器：<https://script.google.com/d/16UOMjuzkxmJeJSIuyUyp9iuwonoRWh0MVbGb_bPSEtjvjxrf4XHHXB8L/edit>
-
-### 你要在瀏覽器手動完成（授權需要你本人點）
-
-1. 開上面的**編輯器**連結。
-2. 把 `setup()` 裡的 `ADMIN_KEY` 改成自己的金鑰；要用 Turnstile 的話一起把 `TURNSTILE_SECRET` 那行取消註解填入；要寄通知信就填 `NOTIFY_EMAIL`。存檔。
-3. 函式選 `setup` → **執行** → 跳授權視窗，全部允許（會建立「訂單明細」分頁、寫入參數）。
-4. 右上「部署」→「**管理部署作業**」（clasp 已建了一個）→ 編輯（鉛筆）：
-   - 執行身分：**我（sky104857@gmail.com）**
-   - 誰可以存取：**任何人**
-   - 版本：**新版本** → 部署
-   （或直接「新增部署作業」建一個乾淨的，類型「網頁應用程式」，設定同上。）
-5. 複製 Web App 網址（結尾 `/exec`）。
-
-> 之後改了 `gas/程式碼.js`：`cd gas && npx @google/clasp@latest push` → 回「管理部署作業」→ 編輯 → 版本「新版本」→ 部署。網址不變。
-
----
-
-## 二、前端設定
-
-編輯 `config.js`：
-
-```js
-window.APP_CONFIG = {
-  GAS_URL: "貼上剛剛的 /exec 網址",
-  PICKUP_SLOTS: [ "上午 09:00–12:00", "下午 13:00–17:00", "晚上 18:00–20:00" ],
-  LEAD_DAYS: 2,
-};
-```
-
-`admin.html` 的金鑰就是 `setup()` 裡設定的 `ADMIN_KEY`，載入時輸入即可（會存在瀏覽器本機）。
-
----
-
-## 三、上架 GitHub Pages
+### 之後改了 `gas/程式碼.js` 要怎麼更新
 
 ```bash
-cd ~/Projects/月餅訂購
-git add -A && git commit -m "更新設定"
-git push
+cd ~/Projects/月餅訂購/gas && npx @google/clasp@latest push
 ```
 
-GitHub → repo → **Settings → Pages → Source: Deploy from a branch → `main` / `(root)`**。
-約一分鐘後：
+再到編輯器：部署 → 管理部署作業 → 編輯（鉛筆）→ 版本「建立新版本」→ 部署。**網址不變**。
 
-- 訂購頁：`https://sky104857-stack.github.io/mooncake-order/`
-- 彙總頁：`https://sky104857-stack.github.io/mooncake-order/admin.html`
+### 加上 Cloudflare Turnstile（建議）
+
+1. <https://dash.cloudflare.com> → Turnstile → Add site，網域 `sky104857-stack.github.io`。
+2. Site Key → 填 `config.js` 的 `TURNSTILE_SITE_KEY`，`git push`。
+3. Secret Key → 編輯器 → 專案設定 → 指令碼屬性 → 新增 `TURNSTILE_SECRET`。
+
+---
+
+## 二、前端設定 — ✅ 已設定
+
+`config.js` 的 `GAS_URL` 已填好。`admin.html` 載入時要輸入的金鑰＝ Script Property `ADMIN_KEY`（存在瀏覽器本機，不用每次打）。
+
+要改取貨時段 / 最早可預約天數，改 `config.js` 的 `PICKUP_SLOTS`、`LEAD_DAYS` 再 `git push`。
+
+---
+
+## 三、GitHub Pages — ✅ 已上線
+
+- 訂購頁：<https://sky104857-stack.github.io/mooncake-order/>
+- 彙總頁：<https://sky104857-stack.github.io/mooncake-order/admin.html>
+
+改完程式碼後 `git push` 就會自動重新發佈（約 1 分鐘）。
 
 ---
 

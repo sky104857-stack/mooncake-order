@@ -1,7 +1,7 @@
 // 前端設定 — 部署完 Apps Script Web App 後把網址填進來,再 push 到 GitHub。
 window.APP_CONFIG = {
   // Apps Script 部署後的「網頁應用程式」網址,結尾是 /exec
-  GAS_URL: "",
+  GAS_URL: "https://script.google.com/macros/s/AKfycbxYYOnAxLgpePSEc3ApO1IrF7Y3dPsD2BAfhkPJFpP3A-ZHQ9MtaCSel5Euxfov4_xo/exec",
 
   // Cloudflare Turnstile 的 Site Key(公開網站防機器人用)。
   // 到 https://dash.cloudflare.com → Turnstile → 新增網站,網域填 sky104857-stack.github.io
