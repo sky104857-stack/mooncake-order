@@ -32,7 +32,7 @@
       if (!window.turnstile || typeof window.turnstile.render !== "function") {
         return window.setTimeout(renderTurnstile, 200);
       }
-      turnstileWidgetId = window.turnstile.render("#turnstile", {
+      turnstileWidgetId = window.turnstile.render("#ts-widget", {
         sitekey: CFG.TURNSTILE_SITE_KEY,
         callback: function (token) { turnstileToken = token; },
         "expired-callback": function () { turnstileToken = ""; },
