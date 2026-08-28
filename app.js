@@ -28,21 +28,22 @@
   var turnstileToken = "";
   var turnstileWidgetId = null;
   if (CFG.TURNSTILE_SITE_KEY) {
-    window.__tsCallback = function (token) { turnstileToken = token; };
-    window.__tsExpired = function () { turnstileToken = ""; };
-    window.onloadTurnstileCallback = function () {
+    var renderTurnstile = function () {
+      if (!window.turnstile || typeof window.turnstile.render !== "function") {
+        return window.setTimeout(renderTurnstile, 200);
+      }
       turnstileWidgetId = window.turnstile.render("#turnstile", {
         sitekey: CFG.TURNSTILE_SITE_KEY,
-        callback: window.__tsCallback,
-        "expired-callback": window.__tsExpired,
-        "error-callback": window.__tsExpired,
+        callback: function (token) { turnstileToken = token; },
+        "expired-callback": function () { turnstileToken = ""; },
+        "error-callback": function () { turnstileToken = ""; },
       });
     };
     var s = document.createElement("script");
-    s.src =
-      "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback";
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
     s.async = true;
     s.defer = true;
+    s.onload = renderTurnstile;
     document.head.appendChild(s);
   }
   function resetTurnstile() {
