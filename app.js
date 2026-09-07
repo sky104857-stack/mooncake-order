@@ -64,10 +64,10 @@
   }
 
   function lineValues(card) {
-    var f = card.querySelector('input[name="filling"]:checked');
-    var t = card.querySelector('input[name="topping"]:checked');
-    var p = card.querySelector('input[name="packSize"]:checked');
-    var b = parseInt(card.querySelector('input[name="boxes"]').value, 10);
+    var f = card.querySelector('input[name^="filling"]:checked');
+    var t = card.querySelector('input[name^="topping"]:checked');
+    var p = card.querySelector('input[name^="packSize"]:checked');
+    var b = parseInt(card.querySelector('input[name^="boxes"]').value, 10);
     return {
       filling: f ? f.value : "",
       topping: t ? t.value : "",
@@ -76,8 +76,14 @@
     };
   }
 
+  var cardSeq = 0;
   function addCard() {
     var node = tpl.content.firstElementChild.cloneNode(true);
+    cardSeq += 1;
+    // 每張卡片的 radio 自成一組,避免跨卡片互斥
+    node.querySelectorAll("input[name]").forEach(function (inp) {
+      inp.name = inp.name + "_" + cardSeq;
+    });
     itemList.appendChild(node);
     renumber();
     updateSummary();
@@ -96,7 +102,7 @@
       return;
     }
     if (e.target.classList.contains("step-up") || e.target.classList.contains("step-down")) {
-      var input = card.querySelector('input[name="boxes"]');
+      var input = card.querySelector('input[name^="boxes"]');
       var v = parseInt(input.value, 10) || 1;
       v += e.target.classList.contains("step-up") ? 1 : -1;
       if (v < 1) v = 1;
