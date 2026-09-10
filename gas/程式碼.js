@@ -22,7 +22,7 @@ const HEADERS = [
   "內餡", "加料", "顆數", "盒數", "總顆數", "備註",
 ];
 
-const FILLINGS = ["紅豆", "芋頭", "綠豆"];
+const FILLINGS = ["紅豆", "芋頭", "綠豆", "巧克力"];
 const TOPPINGS = ["原味", "鹹蛋黃", "麻薯"];
 const PACK_SIZES = [6, 12];
 

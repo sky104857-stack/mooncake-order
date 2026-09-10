@@ -2,7 +2,7 @@
   "use strict";
 
   var CFG = window.APP_CONFIG || {};
-  var FILLINGS = ["紅豆", "芋頭", "綠豆"];
+  var FILLINGS = ["紅豆", "芋頭", "綠豆", "巧克力"];
   var TOPPINGS = ["原味", "鹹蛋黃", "麻薯"];
   var PACKS = [6, 12];
 
