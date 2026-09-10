@@ -29,20 +29,74 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
 </head>
-<body class="min-h-screen bg-brand-50 text-brand-900 font-sans">
-  <div class="mx-auto max-w-2xl px-4 py-8 sm:py-12">
+<body class="min-h-screen bg-[#153a63] text-slate-800 font-sans">
+
+  <!-- 藍調富士山背景 -->
+  <div id="bg" aria-hidden="true" class="fixed inset-0 -z-10 pointer-events-none">
+    <svg class="w-full h-full" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#071630" />
+          <stop offset="0.42" stop-color="#143a63" />
+          <stop offset="0.75" stop-color="#3f6f9e" />
+          <stop offset="1" stop-color="#8fb3cf" />
+        </linearGradient>
+        <linearGradient id="fuji" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#4c7cab" />
+          <stop offset="1" stop-color="#16375f" />
+        </linearGradient>
+        <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stop-color="#dfeaf5" stop-opacity="0.32" />
+          <stop offset="1" stop-color="#dfeaf5" stop-opacity="0" />
+        </radialGradient>
+      </defs>
+
+      <rect width="1200" height="900" fill="url(#sky)" />
+
+      <circle cx="800" cy="96" r="108" fill="url(#glow)" />
+      <circle cx="800" cy="96" r="28" fill="#eef4fa" opacity="0.75" />
+
+      <g fill="#dce8f5">
+        <circle cx="120" cy="90" r="1.4" opacity="0.8" />
+        <circle cx="280" cy="150" r="1" opacity="0.7" />
+        <circle cx="210" cy="230" r="1.6" opacity="0.75" />
+        <circle cx="470" cy="70" r="1.1" opacity="0.8" />
+        <circle cx="610" cy="120" r="1" opacity="0.6" />
+        <circle cx="700" cy="58" r="1.3" opacity="0.7" />
+        <circle cx="1040" cy="330" r="1.2" opacity="0.55" />
+        <circle cx="1130" cy="230" r="1" opacity="0.55" />
+        <circle cx="360" cy="310" r="1" opacity="0.5" />
+      </g>
+
+      <path d="M0,712 Q260,668 560,692 T1200,684 V900 H0 Z" fill="#356087" opacity="0.45" />
+      <path d="M0,748 Q360,712 740,732 T1200,722 V900 H0 Z" fill="#254a70" opacity="0.6" />
+
+      <g transform="translate(-132 0)">
+        <path d="M-40,735 C230,729 370,706 455,630 C505,585 535,475 570,388 C580,360 590,348 600,346 C610,348 620,360 630,388 C665,475 695,585 745,630 C830,706 970,729 1240,735 Z" fill="url(#fuji)" />
+        <path d="M600,346 C589,378 574,410 564,432 c8,-6 14,3 21,6 c6,-9 14,-6 20,2 c5,-9 14,-9 21,0 c6,-7 14,-5 19,3 c5,-10 12,-8 19,-4 C626,410 611,378 600,346 Z" fill="#d6e3ef" />
+        <ellipse cx="600" cy="378" rx="245" ry="18" fill="#cfe1ef" opacity="0.1" />
+      </g>
+
+      <ellipse cx="600" cy="702" rx="480" ry="36" fill="#cfe1ef" opacity="0.12" />
+      <ellipse cx="440" cy="736" rx="330" ry="24" fill="#cfe1ef" opacity="0.09" />
+
+      <path d="M0,802 C250,758 450,786 700,772 C920,760 1060,786 1200,766 L1200,900 L0,900 Z" fill="#0a2043" />
+    </svg>
+  </div>
+
+  <div class="relative mx-auto max-w-2xl px-4 py-8 sm:py-12">
 
     <header class="text-center mb-8">
-      <div class="text-4xl mb-2">🥮</div>
-      <h1 class="text-2xl sm:text-3xl font-bold tracking-wide">手工月餅預訂</h1>
-      <p class="mt-2 text-sm text-brand-700">選好內餡、加料、顆數與盒數，送出後我們會與您聯絡確認。</p>
+      <div class="text-4xl mb-2 [filter:drop-shadow(0_2px_6px_rgb(0_0_0_/_0.3))]">🥮</div>
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-wide text-white [text-shadow:0_2px_12px_rgb(8_22_48_/_0.55)]">手工月餅預訂</h1>
+      <p class="mt-2 text-sm text-blue-50/90 [text-shadow:0_1px_8px_rgb(8_22_48_/_0.5)]">選好內餡、加料、顆數與盒數，送出後我們會與您聯絡確認。</p>
     </header>
 
     <!-- 訂購表單 -->
     <form id="orderForm" class="space-y-6">
 
       <!-- 訂購人 -->
-      <section class="bg-white rounded-2xl shadow-sm ring-1 ring-brand-100 p-5">
+      <section class="bg-white/85 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-900/10 ring-1 ring-white/40 p-5">
         <h2 class="font-bold text-lg mb-4 flex items-center gap-2"><span>👤</span>訂購人資訊</h2>
         <div class="grid sm:grid-cols-2 gap-4">
           <label class="block">
@@ -60,7 +114,7 @@
       </section>
 
       <!-- 取貨 -->
-      <section class="bg-white rounded-2xl shadow-sm ring-1 ring-brand-100 p-5">
+      <section class="bg-white/85 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-900/10 ring-1 ring-white/40 p-5">
         <h2 class="font-bold text-lg mb-4 flex items-center gap-2"><span>📅</span>取貨日期與時段</h2>
         <div class="grid sm:grid-cols-2 gap-4">
           <label class="block">
@@ -79,7 +133,7 @@
       </section>
 
       <!-- 品項 -->
-      <section class="bg-white rounded-2xl shadow-sm ring-1 ring-brand-100 p-5">
+      <section class="bg-white/85 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-900/10 ring-1 ring-white/40 p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-bold text-lg flex items-center gap-2"><span>🥮</span>品項</h2>
           <button type="button" id="addItemBtn"
@@ -91,7 +145,7 @@
       </section>
 
       <!-- 備註 -->
-      <section class="bg-white rounded-2xl shadow-sm ring-1 ring-brand-100 p-5">
+      <section class="bg-white/85 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-900/10 ring-1 ring-white/40 p-5">
         <label class="block">
           <span class="font-bold text-lg flex items-center gap-2 mb-3"><span>📝</span>備註（可留空）</span>
           <textarea name="note" rows="3" placeholder="例如：分兩袋、需要提袋、素食…"
@@ -100,7 +154,7 @@
       </section>
 
       <!-- 小計 -->
-      <section class="bg-brand-100/70 rounded-2xl p-5 ring-1 ring-brand-200">
+      <section class="bg-white/80 backdrop-blur-md rounded-2xl p-5 ring-1 ring-white/40 shadow-xl shadow-slate-900/10">
         <h2 class="font-bold text-lg mb-3 flex items-center gap-2"><span>🧮</span>訂單摘要</h2>
         <div id="summary" class="text-sm text-brand-800 space-y-1"></div>
       </section>
@@ -122,7 +176,7 @@
     </form>
 
     <!-- 成功畫面 -->
-    <div id="successView" class="hidden bg-white rounded-2xl shadow-sm ring-1 ring-brand-100 p-6 text-center">
+    <div id="successView" class="hidden bg-white/90 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-900/10 ring-1 ring-white/40 p-6 text-center">
       <div class="text-5xl mb-3">✅</div>
       <h2 class="text-xl font-bold">預訂成功！</h2>
       <p class="mt-2 text-sm text-brand-700">訂單編號</p>
@@ -135,7 +189,7 @@
       </button>
     </div>
 
-    <footer class="mt-10 text-center text-xs text-brand-400">🥮 中秋月餅預訂系統</footer>
+    <footer class="mt-10 text-center text-xs text-white/75 [text-shadow:0_1px_6px_rgb(8_22_48_/_0.5)]">🥮 中秋月餅預訂系統</footer>
   </div>
 
   <!-- 品項範本 -->
