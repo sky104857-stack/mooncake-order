@@ -24,6 +24,46 @@
   min.setDate(min.getDate() + lead);
   form.pickupDate.min = min.toISOString().slice(0, 10);
 
+  // ---- 公休 / 額滿日期 -------------------------------------------------
+  var blockedDates = {}; // { "yyyy-MM-dd": "原因" }
+  var blockedHintEl = document.getElementById("blockedDatesHint");
+
+  function renderBlockedHint() {
+    if (!blockedHintEl) return;
+    var dates = Object.keys(blockedDates).sort();
+    if (!dates.length) {
+      blockedHintEl.classList.add("hidden");
+      return;
+    }
+    var parts = dates.map(function (d) {
+      return d.slice(5).replace("-", "/") + "(" + blockedDates[d] + ")";
+    });
+    blockedHintEl.textContent = "公休/已額滿：" + parts.join("、");
+    blockedHintEl.classList.remove("hidden");
+  }
+
+  if (CFG.GAS_URL) {
+    fetch(CFG.GAS_URL + "?action=blockedDates")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        blockedDates = {};
+        (data && data.ok && data.dates ? data.dates : []).forEach(function (b) {
+          blockedDates[b.date] = b.reason;
+        });
+        renderBlockedHint();
+      })
+      .catch(function () {}); // 讀不到就不擋,送出時後端還是會擋
+  }
+
+  form.pickupDate.addEventListener("change", function () {
+    if (blockedDates[form.pickupDate.value]) {
+      showError("這天" + blockedDates[form.pickupDate.value] + "，請選其他日期。");
+      form.pickupDate.value = "";
+    } else {
+      clearError();
+    }
+  });
+
   // ---- Cloudflare Turnstile 人機驗證(選用) --------------------------
   var turnstileToken = "";
   var turnstileWidgetId = null;
@@ -188,6 +228,11 @@
 
     if (!CFG.GAS_URL) {
       showError("系統尚未設定後端網址（config.js 的 GAS_URL），暫時無法送出。");
+      return;
+    }
+
+    if (blockedDates[form.pickupDate.value]) {
+      showError("這天" + blockedDates[form.pickupDate.value] + "，請選其他日期。");
       return;
     }
 

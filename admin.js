@@ -23,6 +23,95 @@
 
   document.getElementById("loadBtn").addEventListener("click", load);
 
+  // ---- 公休 / 額滿日期管理 ---------------------------------------------
+  var blockedListEl = document.getElementById("blockedList");
+  var blockDateInput = document.getElementById("blockDateInput");
+  var blockReasonInput = document.getElementById("blockReasonInput");
+  var blockMsg = document.getElementById("blockMsg");
+  var currentBlocked = []; // [{date, reason}]
+
+  function loadBlockedDates() {
+    if (!CFG.GAS_URL) return;
+    fetch(CFG.GAS_URL + "?action=blockedDates")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        currentBlocked = (data && data.ok && data.dates) || [];
+        renderBlockedList();
+      })
+      .catch(function () {});
+  }
+
+  function renderBlockedList() {
+    if (!blockedListEl) return;
+    if (!currentBlocked.length) {
+      blockedListEl.innerHTML = '<span class="text-xs text-stone-400">目前沒有封鎖任何日期</span>';
+      return;
+    }
+    blockedListEl.innerHTML = currentBlocked
+      .map(function (b) {
+        return (
+          "<span class='inline-flex items-center gap-1.5 rounded-full bg-red-50 text-red-700 ring-1 ring-red-200 px-3 py-1 text-sm'>" +
+          esc(b.date) + "（" + esc(b.reason) + "）" +
+          "<button type='button' data-date='" + esc(b.date) + "' class='removeBlockBtn text-red-400 hover:text-red-700 font-bold'>×</button>" +
+          "</span>"
+        );
+      })
+      .join("");
+    blockedListEl.querySelectorAll(".removeBlockBtn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        saveBlockedDates(currentBlocked.filter(function (b) { return b.date !== btn.dataset.date; }));
+      });
+    });
+  }
+
+  function saveBlockedDates(list) {
+    var key = keyInput.value.trim();
+    if (!key) {
+      blockMsg.textContent = "請先在上面輸入管理金鑰。";
+      return;
+    }
+    if (!CFG.GAS_URL) {
+      blockMsg.textContent = "config.js 尚未設定 GAS_URL。";
+      return;
+    }
+    blockMsg.textContent = "處理中…";
+    fetch(CFG.GAS_URL, {
+      method: "POST",
+      // text/plain 避免 CORS preflight;GAS 端用 JSON.parse 解析
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "admin_setBlockedDates", adminKey: key, dates: list }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data || !data.ok) {
+          blockMsg.textContent = "失敗：" + ((data && data.error) || "未知錯誤");
+          return;
+        }
+        currentBlocked = data.dates || [];
+        renderBlockedList();
+        blockMsg.textContent = "已更新。";
+        blockDateInput.value = "";
+        blockReasonInput.value = "";
+      })
+      .catch(function (err) {
+        blockMsg.textContent = "失敗（可能是網路或 CORS）：" + err;
+      });
+  }
+
+  document.getElementById("addBlockBtn").addEventListener("click", function () {
+    var d = blockDateInput.value;
+    if (!d) {
+      blockMsg.textContent = "請先選日期。";
+      return;
+    }
+    var reason = blockReasonInput.value.trim() || "暫停預訂";
+    var next = currentBlocked.filter(function (b) { return b.date !== d; });
+    next.push({ date: d, reason: reason });
+    saveBlockedDates(next);
+  });
+
+  loadBlockedDates();
+
   function load() {
     var key = keyInput.value.trim();
     if (!key) {

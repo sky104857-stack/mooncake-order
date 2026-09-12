@@ -20,6 +20,10 @@
 //   5) 全站每分鐘上限 + 每日總量上限(超過就擋,避免爆量)
 //   6) 可設 NOTIFY_EMAIL,每筆成功訂單寄信通知
 //
+// 公休 / 額滿日期:存在 Script Property BLOCKED_DATES(admin.html 管理)。
+//   doGet?action=blockedDates 公開讀取(訂購頁用來提示、擋選);
+//   doPost 帶 action:"admin_setBlockedDates" + adminKey 才能整批覆寫。
+//
 // 部署步驟見專案 README.md。
 // ---------------------------------------------------------------------------
 
@@ -100,6 +104,48 @@ function digitsOnly_(s) {
   return String(s || "").replace(/[^0-9]/g, "");
 }
 
+// ---- 公休 / 額滿日期 -------------------------------------------------
+// 存在 Script Property "BLOCKED_DATES",格式:[{date:"yyyy-MM-dd", reason:"公休"}, ...]
+// 公開給訂購頁讀取(不含任何個資,只有日期跟原因),管理頁才能新增/移除。
+
+function getBlockedDates_() {
+  const raw = PropertiesService.getScriptProperties().getProperty("BLOCKED_DATES");
+  if (!raw) return [];
+  try {
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function setBlockedDates_(list) {
+  PropertiesService.getScriptProperties().setProperty("BLOCKED_DATES", JSON.stringify(list));
+}
+
+// 管理頁呼叫:整批覆寫公休/額滿日期清單(需要 ADMIN_KEY)
+function handleSetBlockedDates_(body) {
+  const key = PropertiesService.getScriptProperties().getProperty("ADMIN_KEY");
+  if (!key || body.adminKey !== key) {
+    return jsonResponse_({ ok: false, error: "unauthorized" });
+  }
+  const input = Array.isArray(body.dates) ? body.dates : [];
+  const seen = {};
+  const cleaned = [];
+  for (let i = 0; i < input.length; i++) {
+    const d = String((input[i] || {}).date || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || seen[d]) continue;
+    seen[d] = true;
+    cleaned.push({
+      date: d,
+      reason: String((input[i] || {}).reason || "").trim().slice(0, 40) || "暫停預訂",
+    });
+  }
+  cleaned.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  setBlockedDates_(cleaned);
+  return jsonResponse_({ ok: true, dates: cleaned });
+}
+
 // ---- Turnstile 驗證 ------------------------------------------------------
 
 function verifyTurnstile_(token) {
@@ -136,6 +182,11 @@ function doPost(e) {
       return jsonResponse_({ ok: false, error: "格式錯誤" });
     }
 
+    // 0) 管理動作(設定公休/額滿日期),跟一般訂單分開處理,不算防灌單那一套
+    if (body.action === "admin_setBlockedDates") {
+      return handleSetBlockedDates_(body);
+    }
+
     // 1) 蜜罐:正常使用者看不到 website 欄位
     if (String(body.website || "").trim() !== "") {
       return jsonResponse_({ ok: false, error: "送出失敗" });
@@ -164,6 +215,9 @@ function doPost(e) {
     if (phone.length < 8) return jsonResponse_({ ok: false, error: "請填正確的聯絡電話" });
     if (!/^\d{4}-\d{2}-\d{2}$/.test(pickupDate))
       return jsonResponse_({ ok: false, error: "請選取貨日期" });
+    const blockedHit = getBlockedDates_().find(function (b) { return b.date === pickupDate; });
+    if (blockedHit)
+      return jsonResponse_({ ok: false, error: "這天" + (blockedHit.reason || "暫停預訂") + ",請選其他日期。" });
     if (!pickupSlot) return jsonResponse_({ ok: false, error: "請選取貨時段" });
     if (!items.length) return jsonResponse_({ ok: false, error: "請至少新增一個品項" });
     if (items.length > MAX_ITEMS)
@@ -290,6 +344,11 @@ function notify_(orderId, customer, phone, date, slot, boxes, pieces, price) {
 
 function doGet(e) {
   try {
+    // 公休/額滿日期給訂購頁公開讀取,不含個資,不需要管理金鑰
+    if (e.parameter.action === "blockedDates") {
+      return jsonResponse_({ ok: true, dates: getBlockedDates_() });
+    }
+
     const props = PropertiesService.getScriptProperties();
     const key = props.getProperty("ADMIN_KEY");
     if (!key || (e.parameter.key || "") !== key) {
