@@ -2,8 +2,15 @@
 // ---------------------------------------------------------------------------
 // 綁定的試算表會自動建立一個工作表(分頁)叫「訂單明細」,一列 = 一個品項,欄位依序:
 //   時間戳記 | 訂單編號 | 訂購人 | 電話 | 取貨日期 | 取貨時段 |
-//   內餡 | 加料 | 顆數 | 盒數 | 總顆數 | 備註
+//   內餡 | 加料 | 顆數 | 盒數 | 總顆數 | 備註 | 單顆價格 | 小計金額
 // 一張訂單如果點了多個組合,就會拆成多列,共用同一個「訂單編號」。
+// (單顆價格／小計金額是後來加的欄位,刻意放在備註後面、表格最後,
+//  這樣舊資料列的既有欄位索引不會被打亂,只是新欄位在舊資料列上是空的。)
+//
+// 定價規則(見下方 PRICE 相關常數):
+//   任何內餡同價;原味每顆 50 元,鹹蛋黃／麻薯每顆 +5 元(=55 元);
+//   十二顆裝為精裝禮盒(送禮用),每盒加收 30 元。
+//   小計金額 = 單顆價格 × 顆數/盒 × 盒數 (+ 十二顆裝的每盒禮盒加收 × 盒數)。
 //
 // 防機器人 / 防灌單(公開網站):
 //   1) Cloudflare Turnstile 驗證碼(主力,免費) — 需設 Script Property TURNSTILE_SECRET
@@ -19,12 +26,24 @@
 const SHEET_NAME = "訂單明細";
 const HEADERS = [
   "時間戳記", "訂單編號", "訂購人", "電話", "取貨日期", "取貨時段",
-  "內餡", "加料", "顆數", "盒數", "總顆數", "備註",
+  "內餡", "加料", "顆數", "盒數", "總顆數", "備註", "單顆價格", "小計金額",
 ];
 
 const FILLINGS = ["紅豆", "芋頭", "綠豆", "巧克力"];
 const TOPPINGS = ["原味", "鹹蛋黃", "麻薯"];
 const PACK_SIZES = [6, 12];
+
+// ---- 定價(任何內餡同價,只看加料與顆數/盒) -------------------------
+const BASE_UNIT_PRICE = 50;                       // 每顆基本價(原味)
+const TOPPING_SURCHARGE = { "原味": 0, "鹹蛋黃": 5, "麻薯": 5 }; // 每顆加收
+const GIFT_BOX_SURCHARGE = 30;                    // 十二顆裝(精裝禮盒)每盒加收
+
+function unitPrice_(topping) {
+  return BASE_UNIT_PRICE + (TOPPING_SURCHARGE[topping] || 0);
+}
+function boxPrice_(topping, packSize) {
+  return unitPrice_(topping) * packSize + (packSize === 12 ? GIFT_BOX_SURCHARGE : 0);
+}
 
 // 防灌單參數(可自行調整)
 const MIN_FILL_MS = 3000;          // 填表至少要 3 秒
@@ -44,6 +63,11 @@ function getSheet_() {
     sheet = ss.insertSheet(SHEET_NAME);
     sheet.appendRow(HEADERS);
     sheet.setFrozenRows(1);
+  } else if (sheet.getLastColumn() < HEADERS.length) {
+    // 舊表格結構(例如加價格欄位前建立的):補上新欄位的標題,不動既有資料
+    const from = sheet.getLastColumn();
+    sheet.getRange(1, from + 1, 1, HEADERS.length - from)
+      .setValues([HEADERS.slice(from)]);
   }
   // 電話、取貨日期存純文字,避免試算表把 "0912..." 轉成數字吃掉開頭 0
   sheet.getRange("D:E").setNumberFormat("@");
@@ -148,6 +172,7 @@ function doPost(e) {
     const rows = [];
     let totalBoxes = 0;
     let totalPieces = 0;
+    let totalPrice = 0;
     for (let i = 0; i < items.length; i++) {
       const it = items[i] || {};
       const filling = String(it.filling || "").trim();
@@ -163,9 +188,12 @@ function doPost(e) {
       if (!(boxes >= 1 && boxes <= MAX_BOXES_PER_LINE))
         return jsonResponse_({ ok: false, error: "第 " + (i + 1) + " 項盒數不正確" });
       const linePieces = packSize * boxes;
+      const unit = unitPrice_(topping);
+      const lineAmount = boxPrice_(topping, packSize) * boxes;
       totalBoxes += boxes;
       totalPieces += linePieces;
-      rows.push([filling, topping, packSize, boxes, linePieces]);
+      totalPrice += lineAmount;
+      rows.push([filling, topping, packSize, boxes, linePieces, unit, lineAmount]);
     }
 
     // ---- 頻率 / 重複 / 總量控管 ----
@@ -212,7 +240,7 @@ function doPost(e) {
     const sheet = getSheet_();
     const fullRows = rows.map(function (r) {
       return [now, orderId, customer, phoneRaw, pickupDate, pickupSlot,
-        r[0], r[1], r[2], r[3], r[4], note];
+        r[0], r[1], r[2], r[3], r[4], note, r[5], r[6]];
     });
     sheet
       .getRange(sheet.getLastRow() + 1, 1, fullRows.length, HEADERS.length)
@@ -224,7 +252,7 @@ function doPost(e) {
     cache.put(minuteKey, String(minuteCount), 120);
     props.setProperty(dayKey, String(dayCount + 1));
 
-    notify_(orderId, customer, phoneRaw, pickupDate, pickupSlot, totalBoxes, totalPieces);
+    notify_(orderId, customer, phoneRaw, pickupDate, pickupSlot, totalBoxes, totalPieces, totalPrice);
 
     return jsonResponse_({
       ok: true,
@@ -232,6 +260,7 @@ function doPost(e) {
       lineCount: fullRows.length,
       totalBoxes: totalBoxes,
       totalPieces: totalPieces,
+      totalPrice: totalPrice,
     });
   } catch (err) {
     return jsonResponse_({ ok: false, error: "系統忙碌,請稍後再試" });
@@ -240,7 +269,7 @@ function doPost(e) {
   }
 }
 
-function notify_(orderId, customer, phone, date, slot, boxes, pieces) {
+function notify_(orderId, customer, phone, date, slot, boxes, pieces, price) {
   try {
     const to = PropertiesService.getScriptProperties().getProperty("NOTIFY_EMAIL");
     if (!to) return;
@@ -250,7 +279,7 @@ function notify_(orderId, customer, phone, date, slot, boxes, pieces) {
       "訂單編號:" + orderId +
         "\n訂購人:" + customer + " (" + phone + ")" +
         "\n取貨:" + date + " " + slot +
-        "\n合計:" + boxes + " 盒 / " + pieces + " 顆"
+        "\n合計:" + boxes + " 盒 / " + pieces + " 顆 / NT$" + price
     );
   } catch (err) {
     // 通知失敗不影響訂單
@@ -291,6 +320,9 @@ function doGet(e) {
           boxes: Number(v[9]) || 0,
           pieces: Number(v[10]) || 0,
           note: String(v[11]),
+          // 舊訂單(加價格欄位前)這兩格是空的,退回用目前定價規則現算
+          unitPrice: Number(v[12]) || unitPrice_(String(v[7])),
+          amount: Number(v[13]) || boxPrice_(String(v[7]), Number(v[8]) || 0) * (Number(v[9]) || 0),
         };
       })
       .filter(function (r) {

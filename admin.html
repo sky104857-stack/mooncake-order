@@ -47,7 +47,10 @@
     <div id="report" class="hidden space-y-8">
       <!-- 製作彙總 -->
       <section class="print-block bg-white rounded-xl ring-1 ring-stone-200 p-5">
-        <h2 class="text-lg font-bold mb-1">製作彙總</h2>
+        <div class="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+          <h2 class="text-lg font-bold">製作彙總</h2>
+          <p class="text-sm text-stone-600">總營收：<span id="revenueTotal" class="font-bold text-amber-700">-</span></p>
+        </div>
         <p id="reportScope" class="text-xs text-stone-500 mb-4"></p>
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse" id="matrixTable"></table>
@@ -78,7 +81,7 @@
     </div>
   </div>
 
-  <script src="config.js?v=20260828-3"></script>
-  <script src="admin.js?v=20260828-3"></script>
+  <script src="config.js?v=20260912-1"></script>
+  <script src="admin.js?v=20260912-1"></script>
 </body>
 </html>

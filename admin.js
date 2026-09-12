@@ -84,14 +84,21 @@
     renderBy("toppingTable", rows, "topping", TOPPINGS);
     renderPack(rows);
     renderOrders(rows);
+    renderRevenue(rows);
+  }
+
+  function money(n) {
+    return "NT$" + Math.round(n).toLocaleString("zh-Hant-TW");
   }
 
   // ---- 製作彙總:內餡 × 加料,細分 6/12 顆 -----------------------------
   function renderMatrix(rows) {
-    var cell = {}; // key: filling|topping|pack => boxes
+    var cell = {}; // key: filling|topping|pack => {boxes, amount}
     rows.forEach(function (r) {
       var k = r.filling + "|" + r.topping + "|" + r.packSize;
-      cell[k] = (cell[k] || 0) + r.boxes;
+      if (!cell[k]) cell[k] = { boxes: 0, amount: 0 };
+      cell[k].boxes += r.boxes;
+      cell[k].amount += r.amount || 0;
     });
 
     var html =
@@ -100,27 +107,31 @@
       "<th class='py-2 px-3 text-right'>六顆·盒</th>" +
       "<th class='py-2 px-3 text-right'>十二顆·盒</th>" +
       "<th class='py-2 px-3 text-right'>總盒數</th>" +
-      "<th class='py-2 pl-3 text-right'>總顆數</th></tr></thead><tbody>";
+      "<th class='py-2 px-3 text-right'>總顆數</th>" +
+      "<th class='py-2 pl-3 text-right'>金額</th></tr></thead><tbody>";
 
-    var gBox = 0, gPiece = 0;
+    var gBox = 0, gPiece = 0, gAmount = 0;
 
     FILLINGS.forEach(function (f) {
       TOPPINGS.forEach(function (t) {
-        var b6 = cell[f + "|" + t + "|6"] || 0;
-        var b12 = cell[f + "|" + t + "|12"] || 0;
-        var boxes = b6 + b12;
-        var pieces = b6 * 6 + b12 * 12;
+        var c6 = cell[f + "|" + t + "|6"] || { boxes: 0, amount: 0 };
+        var c12 = cell[f + "|" + t + "|12"] || { boxes: 0, amount: 0 };
+        var boxes = c6.boxes + c12.boxes;
+        var pieces = c6.boxes * 6 + c12.boxes * 12;
+        var amount = c6.amount + c12.amount;
         if (boxes === 0) return;
         gBox += boxes;
         gPiece += pieces;
+        gAmount += amount;
         html +=
           "<tr class='border-b border-stone-100'>" +
           "<td class='py-1.5 pr-3 font-medium'>" + f + "</td>" +
           "<td class='py-1.5 pr-3'>" + t + "</td>" +
-          "<td class='py-1.5 px-3 text-right'>" + (b6 || "") + "</td>" +
-          "<td class='py-1.5 px-3 text-right'>" + (b12 || "") + "</td>" +
+          "<td class='py-1.5 px-3 text-right'>" + (c6.boxes || "") + "</td>" +
+          "<td class='py-1.5 px-3 text-right'>" + (c12.boxes || "") + "</td>" +
           "<td class='py-1.5 px-3 text-right font-semibold'>" + boxes + "</td>" +
-          "<td class='py-1.5 pl-3 text-right'>" + pieces + "</td></tr>";
+          "<td class='py-1.5 px-3 text-right'>" + pieces + "</td>" +
+          "<td class='py-1.5 pl-3 text-right'>" + money(amount) + "</td></tr>";
       });
     });
 
@@ -128,9 +139,17 @@
       "</tbody><tfoot><tr class='border-t-2 border-stone-300 font-bold'>" +
       "<td class='py-2 pr-3' colspan='4'>總計</td>" +
       "<td class='py-2 px-3 text-right'>" + gBox + "</td>" +
-      "<td class='py-2 pl-3 text-right'>" + gPiece + "</td></tr></tfoot>";
+      "<td class='py-2 px-3 text-right'>" + gPiece + "</td>" +
+      "<td class='py-2 pl-3 text-right'>" + money(gAmount) + "</td></tr></tfoot>";
 
     document.getElementById("matrixTable").innerHTML = html;
+  }
+
+  // ---- 總營收 ----------------------------------------------------------
+  function renderRevenue(rows) {
+    var total = rows.reduce(function (s, r) { return s + (r.amount || 0); }, 0);
+    var el = document.getElementById("revenueTotal");
+    if (el) el.textContent = money(total);
   }
 
   // ---- 依單一分類(內餡 / 加料) --------------------------------------
@@ -202,13 +221,14 @@
 
     document.getElementById("orderList").innerHTML = list
       .map(function (o) {
-        var totBox = 0, totPiece = 0;
+        var totBox = 0, totPiece = 0, totAmount = 0;
         var items = o.items
           .map(function (it) {
             totBox += it.boxes;
             totPiece += it.pieces;
+            totAmount += it.amount || 0;
             return "<li>" + it.filling + "／" + it.topping + "／" + it.packSize +
-              "顆 × " + it.boxes + " 盒（" + it.pieces + " 顆）</li>";
+              "顆 × " + it.boxes + " 盒（" + it.pieces + " 顆）・" + money(it.amount || 0) + "</li>";
           })
           .join("");
         return (
@@ -218,7 +238,7 @@
           "<span class='text-stone-500 font-mono text-xs'>" + esc(o.orderId) + "</span></div>" +
           "<div class='text-sm text-amber-800 mt-1'>取貨：" + esc(o.pickupDate) + "　" + esc(o.pickupSlot) + "</div>" +
           "<ul class='mt-2 text-sm list-disc list-inside text-stone-700'>" + items + "</ul>" +
-          "<div class='mt-2 text-xs text-stone-500'>小計 " + totBox + " 盒 ・ " + totPiece + " 顆" +
+          "<div class='mt-2 text-xs text-stone-500'>小計 " + totBox + " 盒 ・ " + totPiece + " 顆 ・ <b class='text-stone-700'>" + money(totAmount) + "</b>" +
           (o.note ? "　|　備註：" + esc(o.note) : "") + "</div>" +
           "</div>"
         );

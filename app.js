@@ -116,10 +116,30 @@
   itemList.addEventListener("input", updateSummary);
   document.getElementById("addItemBtn").addEventListener("click", addCard);
 
+  // ---- 價格 ----------------------------------------------------------
+  // 任何內餡都同價;原味每顆 50 元,鹹蛋黃／麻薯每顆 +5 元;
+  // 十二顆裝是精裝禮盒(送禮用),每盒加收 30 元。
+  var BASE_UNIT_PRICE = 50;
+  var TOPPING_SURCHARGE = { "原味": 0, "鹹蛋黃": 5, "麻薯": 5 };
+  var GIFT_BOX_SURCHARGE = 30;
+
+  function unitPrice(topping) {
+    return BASE_UNIT_PRICE + (TOPPING_SURCHARGE[topping] || 0);
+  }
+  function boxPrice(topping, packSize) {
+    return unitPrice(topping) * packSize + (packSize === 12 ? GIFT_BOX_SURCHARGE : 0);
+  }
+  function linePrice(v) {
+    return boxPrice(v.topping, v.packSize) * v.boxes;
+  }
+  function money(n) {
+    return "NT$" + n.toLocaleString("zh-Hant-TW");
+  }
+
   // ---- 即時摘要 ------------------------------------------------------
   function updateSummary() {
     var cards = itemList.querySelectorAll(".item-card");
-    var totalBoxes = 0, totalPieces = 0;
+    var totalBoxes = 0, totalPieces = 0, totalPrice = 0;
     var byFilling = {};
 
     cards.forEach(function (card) {
@@ -127,12 +147,14 @@
       var lineEl = card.querySelector(".item-line-summary");
       if (v.filling && v.topping && v.packSize && v.boxes) {
         var pieces = v.packSize * v.boxes;
+        var price = linePrice(v);
         totalBoxes += v.boxes;
         totalPieces += pieces;
+        totalPrice += price;
         byFilling[v.filling] = (byFilling[v.filling] || 0) + v.boxes;
         lineEl.textContent =
           v.filling + "・" + v.topping + "・" + v.packSize + "顆 × " +
-          v.boxes + " 盒 ＝ " + pieces + " 顆";
+          v.boxes + " 盒 ＝ " + pieces + " 顆・" + money(price);
       } else {
         lineEl.textContent = "尚未選完";
       }
@@ -146,7 +168,7 @@
       return k + " " + byFilling[k] + " 盒";
     });
     summaryEl.innerHTML =
-      '<p class="font-semibold text-base">共 ' + totalBoxes + " 盒 ・ " + totalPieces + ' 顆</p>' +
+      '<p class="font-semibold text-base">共 ' + totalBoxes + " 盒 ・ " + totalPieces + " 顆 ・ " + money(totalPrice) + '</p>' +
       '<p class="text-brand-600">內餡分佈：' + parts.join("、") + "</p>";
   }
 
@@ -237,13 +259,17 @@
     view.classList.remove("hidden");
     document.getElementById("successOrderId").textContent = data.orderId || "";
 
+    var totalPrice = 0;
     var lines = payload.items.map(function (v) {
-      return "・" + v.filling + "／" + v.topping + "／" + v.packSize + "顆 × " + v.boxes + " 盒";
+      var price = linePrice(v);
+      totalPrice += price;
+      return "・" + v.filling + "／" + v.topping + "／" + v.packSize + "顆 × " + v.boxes + " 盒 ＝ " + money(price);
     });
     document.getElementById("successSummary").innerHTML =
       "<p><b>訂購人：</b>" + esc(payload.customer) + "（" + esc(payload.phone) + "）</p>" +
       "<p><b>取貨：</b>" + esc(payload.pickupDate) + " " + esc(payload.pickupSlot) + "</p>" +
       "<p><b>品項：</b></p><p>" + lines.map(esc).join("<br>") + "</p>" +
+      "<p><b>總金額：</b>" + money(totalPrice) + "</p>" +
       (payload.note ? "<p><b>備註：</b>" + esc(payload.note) + "</p>" : "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
