@@ -3,7 +3,7 @@
 
   var CFG = window.APP_CONFIG || {};
   var FILLINGS = ["紅豆", "芋頭", "綠豆", "巧克力"];
-  var TOPPINGS = ["原味", "鹹蛋黃", "麻薯"];
+  var TOPPINGS = ["原味", "鹹蛋黃", "麻薯", "肉鬆"];
   var PACKS = [6, 12];
   var EGG_PRODUCT_NAME = "蛋黃酥禮盒";
   var EGG_TOPPINGS = ["不含提袋", "含提袋"]; // 分別對應六入/十二入

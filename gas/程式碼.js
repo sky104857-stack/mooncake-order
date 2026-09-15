@@ -34,12 +34,12 @@ const HEADERS = [
 ];
 
 const FILLINGS = ["紅豆", "芋頭", "綠豆", "巧克力"];
-const TOPPINGS = ["原味", "鹹蛋黃", "麻薯"];
+const TOPPINGS = ["原味", "鹹蛋黃", "麻薯", "肉鬆"];
 const PACK_SIZES = [6, 12];
 
 // ---- 定價:手工月餅(任何內餡同價,只看加料與顆數/盒) -----------------
 const BASE_UNIT_PRICE = 50;                       // 每顆基本價(原味)
-const TOPPING_SURCHARGE = { "原味": 0, "鹹蛋黃": 5, "麻薯": 5 }; // 每顆加收
+const TOPPING_SURCHARGE = { "原味": 0, "鹹蛋黃": 5, "麻薯": 5, "肉鬆": 5 }; // 每顆加收
 const GIFT_BOX_SURCHARGE = 30;                    // 十二顆裝(精裝禮盒)每盒加收
 
 function unitPrice_(topping) {

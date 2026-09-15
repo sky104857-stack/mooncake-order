@@ -191,7 +191,7 @@
   // 手工月餅:任何內餡都同價;原味每顆 50 元,鹹蛋黃／麻薯每顆 +5 元;
   // 十二顆裝是精裝禮盒(送禮用),每盒加收 30 元。
   var BASE_UNIT_PRICE = 50;
-  var TOPPING_SURCHARGE = { "原味": 0, "鹹蛋黃": 5, "麻薯": 5 };
+  var TOPPING_SURCHARGE = { "原味": 0, "鹹蛋黃": 5, "麻薯": 5, "肉鬆": 5 };
   var GIFT_BOX_SURCHARGE = 30;
 
   // 蛋黃酥禮盒:固定盒價,不是算顆的。
