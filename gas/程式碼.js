@@ -37,7 +37,7 @@ const FILLINGS = ["紅豆", "芋頭", "綠豆", "巧克力"];
 const TOPPINGS = ["原味", "鹹蛋黃", "麻薯"];
 const PACK_SIZES = [6, 12];
 
-// ---- 定價(任何內餡同價,只看加料與顆數/盒) -------------------------
+// ---- 定價:手工月餅(任何內餡同價,只看加料與顆數/盒) -----------------
 const BASE_UNIT_PRICE = 50;                       // 每顆基本價(原味)
 const TOPPING_SURCHARGE = { "原味": 0, "鹹蛋黃": 5, "麻薯": 5 }; // 每顆加收
 const GIFT_BOX_SURCHARGE = 30;                    // 十二顆裝(精裝禮盒)每盒加收
@@ -48,6 +48,11 @@ function unitPrice_(topping) {
 function boxPrice_(topping, packSize) {
   return unitPrice_(topping) * packSize + (packSize === 12 ? GIFT_BOX_SURCHARGE : 0);
 }
+
+// ---- 定價:蛋黃酥禮盒(固定盒價,不是算顆的;內含密封袋+乾燥劑) --------
+const EGG_PRODUCT_NAME = "蛋黃酥禮盒";
+const EGG_BOX_PRICE = { 6: 360, 12: 760 };          // 六入 $360(不含提袋)、十二入 $760(含提袋)
+const EGG_BAG_LABEL = { 6: "不含提袋", 12: "含提袋" };
 
 // 防灌單參數(可自行調整)
 const MIN_FILL_MS = 3000;          // 填表至少要 3 秒
@@ -230,20 +235,32 @@ function doPost(e) {
     for (let i = 0; i < items.length; i++) {
       const it = items[i] || {};
       const filling = String(it.filling || "").trim();
-      const topping = String(it.topping || "").trim();
       const packSize = parseInt(it.packSize, 10);
       const boxes = parseInt(it.boxes, 10);
-      if (FILLINGS.indexOf(filling) === -1)
-        return jsonResponse_({ ok: false, error: "第 " + (i + 1) + " 項內餡不正確" });
-      if (TOPPINGS.indexOf(topping) === -1)
-        return jsonResponse_({ ok: false, error: "第 " + (i + 1) + " 項加料不正確" });
-      if (PACK_SIZES.indexOf(packSize) === -1)
-        return jsonResponse_({ ok: false, error: "第 " + (i + 1) + " 項顆數不正確" });
       if (!(boxes >= 1 && boxes <= MAX_BOXES_PER_LINE))
         return jsonResponse_({ ok: false, error: "第 " + (i + 1) + " 項盒數不正確" });
+
+      let topping, unit, lineAmount;
+      if (filling === EGG_PRODUCT_NAME) {
+        // 蛋黃酥禮盒:固定盒價,加料欄位借來記「含/不含提袋」,由後端依規格決定,不吃客戶端傳的值
+        if (EGG_BOX_PRICE[packSize] === undefined)
+          return jsonResponse_({ ok: false, error: "第 " + (i + 1) + " 項規格不正確" });
+        topping = EGG_BAG_LABEL[packSize];
+        unit = EGG_BOX_PRICE[packSize] / packSize;
+        lineAmount = EGG_BOX_PRICE[packSize] * boxes;
+      } else {
+        topping = String(it.topping || "").trim();
+        if (FILLINGS.indexOf(filling) === -1)
+          return jsonResponse_({ ok: false, error: "第 " + (i + 1) + " 項內餡不正確" });
+        if (TOPPINGS.indexOf(topping) === -1)
+          return jsonResponse_({ ok: false, error: "第 " + (i + 1) + " 項加料不正確" });
+        if (PACK_SIZES.indexOf(packSize) === -1)
+          return jsonResponse_({ ok: false, error: "第 " + (i + 1) + " 項顆數不正確" });
+        unit = unitPrice_(topping);
+        lineAmount = boxPrice_(topping, packSize) * boxes;
+      }
+
       const linePieces = packSize * boxes;
-      const unit = unitPrice_(topping);
-      const lineAmount = boxPrice_(topping, packSize) * boxes;
       totalBoxes += boxes;
       totalPieces += linePieces;
       totalPrice += lineAmount;

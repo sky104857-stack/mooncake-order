@@ -103,17 +103,43 @@
     });
   }
 
+  var EGG_PRODUCT_NAME = "蛋黃酥禮盒";
+
   function lineValues(card) {
+    var productEl = card.querySelector('input[name^="product"]:checked');
+    var isEgg = productEl && productEl.value === "eggyolk";
+    var b = parseInt(card.querySelector('input[name^="boxes"]').value, 10);
+    var boxes = b >= 1 ? b : 0;
+
+    if (isEgg) {
+      var ep = card.querySelector('input[name^="eggPackSize"]:checked');
+      var eggPackSize = ep ? parseInt(ep.value, 10) : 0;
+      return {
+        filling: EGG_PRODUCT_NAME,
+        topping: eggPackSize === 12 ? "含提袋" : eggPackSize === 6 ? "不含提袋" : "",
+        packSize: eggPackSize,
+        boxes: boxes,
+      };
+    }
+
     var f = card.querySelector('input[name^="filling"]:checked');
     var t = card.querySelector('input[name^="topping"]:checked');
     var p = card.querySelector('input[name^="packSize"]:checked');
-    var b = parseInt(card.querySelector('input[name^="boxes"]').value, 10);
     return {
       filling: f ? f.value : "",
       topping: t ? t.value : "",
       packSize: p ? parseInt(p.value, 10) : 0,
-      boxes: b >= 1 ? b : 0,
+      boxes: boxes,
     };
+  }
+
+  function toggleProductFields(card) {
+    var productEl = card.querySelector('input[name^="product"]:checked');
+    var isEgg = productEl && productEl.value === "eggyolk";
+    var mc = card.querySelector(".mooncake-fields");
+    var eg = card.querySelector(".eggyolk-fields");
+    if (mc) mc.classList.toggle("hidden", isEgg);
+    if (eg) eg.classList.toggle("hidden", !isEgg);
   }
 
   var cardSeq = 0;
@@ -152,16 +178,24 @@
     }
   });
 
+  itemList.addEventListener("change", function (e) {
+    if (e.target.classList.contains("product-radio")) {
+      toggleProductFields(e.target.closest(".item-card"));
+    }
+  });
   itemList.addEventListener("change", updateSummary);
   itemList.addEventListener("input", updateSummary);
   document.getElementById("addItemBtn").addEventListener("click", addCard);
 
   // ---- 價格 ----------------------------------------------------------
-  // 任何內餡都同價;原味每顆 50 元,鹹蛋黃／麻薯每顆 +5 元;
+  // 手工月餅:任何內餡都同價;原味每顆 50 元,鹹蛋黃／麻薯每顆 +5 元;
   // 十二顆裝是精裝禮盒(送禮用),每盒加收 30 元。
   var BASE_UNIT_PRICE = 50;
   var TOPPING_SURCHARGE = { "原味": 0, "鹹蛋黃": 5, "麻薯": 5 };
   var GIFT_BOX_SURCHARGE = 30;
+
+  // 蛋黃酥禮盒:固定盒價,不是算顆的。
+  var EGG_BOX_PRICE = { 6: 360, 12: 760 };
 
   function unitPrice(topping) {
     return BASE_UNIT_PRICE + (TOPPING_SURCHARGE[topping] || 0);
@@ -170,6 +204,9 @@
     return unitPrice(topping) * packSize + (packSize === 12 ? GIFT_BOX_SURCHARGE : 0);
   }
   function linePrice(v) {
+    if (v.filling === EGG_PRODUCT_NAME) {
+      return (EGG_BOX_PRICE[v.packSize] || 0) * v.boxes;
+    }
     return boxPrice(v.topping, v.packSize) * v.boxes;
   }
   function money(n) {

@@ -5,6 +5,8 @@
   var FILLINGS = ["紅豆", "芋頭", "綠豆", "巧克力"];
   var TOPPINGS = ["原味", "鹹蛋黃", "麻薯"];
   var PACKS = [6, 12];
+  var EGG_PRODUCT_NAME = "蛋黃酥禮盒";
+  var EGG_TOPPINGS = ["不含提袋", "含提袋"]; // 分別對應六入/十二入
 
   var keyInput = document.getElementById("keyInput");
   var dateInput = document.getElementById("dateInput");
@@ -169,7 +171,7 @@
       "　|　共 " + rows.length + " 個品項列";
 
     renderMatrix(rows);
-    renderBy("fillingTable", rows, "filling", FILLINGS);
+    renderBy("fillingTable", rows, "filling", FILLINGS.concat([EGG_PRODUCT_NAME]));
     renderBy("toppingTable", rows, "topping", TOPPINGS);
     renderPack(rows);
     renderOrders(rows);
@@ -201,28 +203,33 @@
 
     var gBox = 0, gPiece = 0, gAmount = 0;
 
+    function addRow(f, t) {
+      var c6 = cell[f + "|" + t + "|6"] || { boxes: 0, amount: 0 };
+      var c12 = cell[f + "|" + t + "|12"] || { boxes: 0, amount: 0 };
+      var boxes = c6.boxes + c12.boxes;
+      var pieces = c6.boxes * 6 + c12.boxes * 12;
+      var amount = c6.amount + c12.amount;
+      if (boxes === 0) return;
+      gBox += boxes;
+      gPiece += pieces;
+      gAmount += amount;
+      html +=
+        "<tr class='border-b border-stone-100'>" +
+        "<td class='py-1.5 pr-3 font-medium'>" + f + "</td>" +
+        "<td class='py-1.5 pr-3'>" + t + "</td>" +
+        "<td class='py-1.5 px-3 text-right'>" + (c6.boxes || "") + "</td>" +
+        "<td class='py-1.5 px-3 text-right'>" + (c12.boxes || "") + "</td>" +
+        "<td class='py-1.5 px-3 text-right font-semibold'>" + boxes + "</td>" +
+        "<td class='py-1.5 px-3 text-right'>" + pieces + "</td>" +
+        "<td class='py-1.5 pl-3 text-right'>" + money(amount) + "</td></tr>";
+    }
+
     FILLINGS.forEach(function (f) {
-      TOPPINGS.forEach(function (t) {
-        var c6 = cell[f + "|" + t + "|6"] || { boxes: 0, amount: 0 };
-        var c12 = cell[f + "|" + t + "|12"] || { boxes: 0, amount: 0 };
-        var boxes = c6.boxes + c12.boxes;
-        var pieces = c6.boxes * 6 + c12.boxes * 12;
-        var amount = c6.amount + c12.amount;
-        if (boxes === 0) return;
-        gBox += boxes;
-        gPiece += pieces;
-        gAmount += amount;
-        html +=
-          "<tr class='border-b border-stone-100'>" +
-          "<td class='py-1.5 pr-3 font-medium'>" + f + "</td>" +
-          "<td class='py-1.5 pr-3'>" + t + "</td>" +
-          "<td class='py-1.5 px-3 text-right'>" + (c6.boxes || "") + "</td>" +
-          "<td class='py-1.5 px-3 text-right'>" + (c12.boxes || "") + "</td>" +
-          "<td class='py-1.5 px-3 text-right font-semibold'>" + boxes + "</td>" +
-          "<td class='py-1.5 px-3 text-right'>" + pieces + "</td>" +
-          "<td class='py-1.5 pl-3 text-right'>" + money(amount) + "</td></tr>";
-      });
+      TOPPINGS.forEach(function (t) { addRow(f, t); });
     });
+    // 蛋黃酥禮盒不是內餡×加料矩陣,是固定規格;借同一個表格多加兩列
+    // (不含提袋只會有六入、含提袋只會有十二入,天然不會混在一起)
+    EGG_TOPPINGS.forEach(function (t) { addRow(EGG_PRODUCT_NAME, t); });
 
     html +=
       "</tbody><tfoot><tr class='border-t-2 border-stone-300 font-bold'>" +
