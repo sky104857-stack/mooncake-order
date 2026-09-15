@@ -142,7 +142,7 @@
             ＋ 新增品項
           </button>
         </div>
-        <p class="text-xs text-brand-500 mb-4">手工月餅：原味每顆 $50，鹹蛋黃／麻薯／肉鬆每顆 $55；十二顆裝為精裝禮盒（送禮用），每盒加收 $30。<br />蛋黃酥禮盒：六入 $360（不含提袋）、十二入 $760（含提袋）。</p>
+        <p class="text-xs text-brand-500 mb-4">手工月餅（自用）：原味每顆 $50，鹹蛋黃／麻薯／肉鬆每顆 $55，六顆／十二顆單純以顆數計價。<br />蛋黃酥禮盒（送禮用）：六入 $360（不含提袋）、十二入 $760（含提袋），計價固定；要換成其他口味請在備註說明。</p>
         <div id="itemList" class="space-y-4"></div>
       </section>
 
@@ -237,8 +237,8 @@
           <div>
             <span class="text-xs font-semibold text-brand-600">顆數 / 盒</span>
             <div class="mt-1 grid grid-cols-2 gap-2" data-group="packSize">
-              <label class="chip"><input type="radio" class="sr-only" name="packSize" value="6" /><span>六顆</span></label>
-              <label class="chip"><input type="radio" class="sr-only" name="packSize" value="12" /><span>十二顆</span></label>
+              <label class="chip"><input type="radio" class="sr-only" name="packSize" value="6" /><span>六顆<br /><span class="block font-normal text-[11px] opacity-80">自用</span></span></label>
+              <label class="chip"><input type="radio" class="sr-only" name="packSize" value="12" /><span>十二顆<br /><span class="block font-normal text-[11px] opacity-80">自用</span></span></label>
             </div>
           </div>
         </div>
@@ -270,6 +270,10 @@
               </div>
             </div>
             <p class="text-[10px] text-brand-400 mt-1">點照片可放大看實品</p>
+            <p class="text-[11px] text-brand-500 mt-2 bg-brand-50 rounded-lg px-3 py-2">
+              預設內容為蛋黃酥。如想換成其他口味組合，請在下方「備註」寫明搭配，
+              例如：<span class="font-semibold">芋頭麻薯×3、蛋黃酥×3</span>。價格仍照上面的固定盒價，不會另外加減。
+            </p>
           </div>
         </div>
 
@@ -301,7 +305,7 @@
     .chip > input:focus-visible + span { outline: 2px solid #a2551d; outline-offset: 2px; }
   </style>
 
-  <script src="config.js?v=20260915-2"></script>
-  <script src="app.js?v=20260915-2"></script>
+  <script src="config.js?v=20260915-3"></script>
+  <script src="app.js?v=20260915-3"></script>
 </body>
 </html>

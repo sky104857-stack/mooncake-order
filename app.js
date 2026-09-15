@@ -188,20 +188,20 @@
   document.getElementById("addItemBtn").addEventListener("click", addCard);
 
   // ---- 價格 ----------------------------------------------------------
-  // 手工月餅:任何內餡都同價;原味每顆 50 元,鹹蛋黃／麻薯每顆 +5 元;
-  // 十二顆裝是精裝禮盒(送禮用),每盒加收 30 元。
+  // 手工月餅(自用):任何內餡都同價;原味每顆 50 元,鹹蛋黃／麻薯／肉鬆每顆 +5 元;
+  // 單純顆數單價 × 6 或 × 12,沒有額外的禮盒加價(禮盒是另一條產品線)。
   var BASE_UNIT_PRICE = 50;
   var TOPPING_SURCHARGE = { "原味": 0, "鹹蛋黃": 5, "麻薯": 5, "肉鬆": 5 };
-  var GIFT_BOX_SURCHARGE = 30;
 
-  // 蛋黃酥禮盒:固定盒價,不是算顆的。
+  // 蛋黃酥禮盒(送禮用):固定盒價,不是算顆的。可在備註要求把內容換成
+  // 其他口味(例如「芋頭麻薯×3、蛋黃酥×3」),但計價方式固定不變。
   var EGG_BOX_PRICE = { 6: 360, 12: 760 };
 
   function unitPrice(topping) {
     return BASE_UNIT_PRICE + (TOPPING_SURCHARGE[topping] || 0);
   }
   function boxPrice(topping, packSize) {
-    return unitPrice(topping) * packSize + (packSize === 12 ? GIFT_BOX_SURCHARGE : 0);
+    return unitPrice(topping) * packSize;
   }
   function linePrice(v) {
     if (v.filling === EGG_PRODUCT_NAME) {

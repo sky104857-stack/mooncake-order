@@ -8,9 +8,10 @@
 //  這樣舊資料列的既有欄位索引不會被打亂,只是新欄位在舊資料列上是空的。)
 //
 // 定價規則(見下方 PRICE 相關常數):
-//   任何內餡同價;原味每顆 50 元,鹹蛋黃／麻薯每顆 +5 元(=55 元);
-//   十二顆裝為精裝禮盒(送禮用),每盒加收 30 元。
-//   小計金額 = 單顆價格 × 顆數/盒 × 盒數 (+ 十二顆裝的每盒禮盒加收 × 盒數)。
+//   手工月餅(自用):任何內餡同價;原味每顆 50 元,鹹蛋黃／麻薯／肉鬆每顆 +5 元(=55 元);
+//   單純顆數單價 × 6 或 × 12,沒有額外禮盒加價。
+//   蛋黃酥禮盒(送禮用)才是固定盒價:六入 $360、十二入 $760;
+//   可在備註要求把內容換成其他口味,但計價方式固定不變(見下方 EGG_BOX_PRICE)。
 //
 // 防機器人 / 防灌單(公開網站):
 //   1) Cloudflare Turnstile 驗證碼(主力,免費) — 需設 Script Property TURNSTILE_SECRET
@@ -37,16 +38,15 @@ const FILLINGS = ["紅豆", "芋頭", "綠豆", "巧克力"];
 const TOPPINGS = ["原味", "鹹蛋黃", "麻薯", "肉鬆"];
 const PACK_SIZES = [6, 12];
 
-// ---- 定價:手工月餅(任何內餡同價,只看加料與顆數/盒) -----------------
+// ---- 定價:手工月餅,自用(任何內餡同價,只看加料;顆數單價 × 6 或 × 12) --
 const BASE_UNIT_PRICE = 50;                       // 每顆基本價(原味)
 const TOPPING_SURCHARGE = { "原味": 0, "鹹蛋黃": 5, "麻薯": 5, "肉鬆": 5 }; // 每顆加收
-const GIFT_BOX_SURCHARGE = 30;                    // 十二顆裝(精裝禮盒)每盒加收
 
 function unitPrice_(topping) {
   return BASE_UNIT_PRICE + (TOPPING_SURCHARGE[topping] || 0);
 }
 function boxPrice_(topping, packSize) {
-  return unitPrice_(topping) * packSize + (packSize === 12 ? GIFT_BOX_SURCHARGE : 0);
+  return unitPrice_(topping) * packSize;
 }
 
 // ---- 定價:蛋黃酥禮盒(固定盒價,不是算顆的;內含密封袋+乾燥劑) --------
