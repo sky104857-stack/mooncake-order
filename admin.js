@@ -300,6 +300,7 @@
           pickupSlot: r.pickupSlot,
           note: r.note,
           time: r.time,
+          paid: !!r.paid,
           items: [],
         };
       }
@@ -328,7 +329,7 @@
           })
           .join("");
         return (
-          "<div class='rounded-lg ring-1 ring-stone-200 p-4'>" +
+          "<div class='order-card rounded-lg ring-1 p-4 " + (o.paid ? "ring-green-300 bg-green-50" : "ring-stone-200") + "' data-order='" + esc(o.orderId) + "'>" +
           "<div class='flex flex-wrap justify-between gap-2 text-sm'>" +
           "<span class='font-bold'>" + esc(o.customer) + "　<span class='font-normal text-stone-500'>" + esc(o.phone) + "</span></span>" +
           "<span class='text-stone-500 font-mono text-xs'>" + esc(o.orderId) + "</span></div>" +
@@ -336,10 +337,96 @@
           "<ul class='mt-2 text-sm list-disc list-inside text-stone-700'>" + items + "</ul>" +
           "<div class='mt-2 text-xs text-stone-500'>小計 " + totBox + " 盒 ・ " + totPiece + " 顆 ・ <b class='text-stone-700'>" + money(totAmount) + "</b>" +
           (o.note ? "　|　備註：" + esc(o.note) : "") + "</div>" +
+          "<div class='no-print mt-3 flex items-center justify-between gap-3 border-t border-stone-200 pt-2'>" +
+          "<label class='inline-flex items-center gap-1.5 text-sm cursor-pointer select-none'>" +
+          "<input type='checkbox' class='paid-checkbox h-4 w-4' data-order='" + esc(o.orderId) + "'" + (o.paid ? " checked" : "") + " />已收款" +
+          "</label>" +
+          "<button type='button' class='delete-order-btn text-xs text-red-600 hover:text-red-800 font-semibold' data-order='" + esc(o.orderId) + "' data-customer='" + esc(o.customer) + "'>🗑 刪除訂單</button>" +
+          "</div>" +
           "</div>"
         );
       })
       .join("");
+  }
+
+  // ---- 已收款 / 刪除訂單 -------------------------------------------------
+  document.getElementById("orderList").addEventListener("change", function (e) {
+    if (!e.target.classList.contains("paid-checkbox")) return;
+    setPaid(e.target.dataset.order, e.target.checked, e.target);
+  });
+
+  document.getElementById("orderList").addEventListener("click", function (e) {
+    if (!e.target.classList.contains("delete-order-btn")) return;
+    deleteOrder(e.target.dataset.order, e.target.dataset.customer, e.target);
+  });
+
+  function setPaid(orderId, paid, checkboxEl) {
+    var key = keyInput.value.trim();
+    if (!key) {
+      alert("請先在上面輸入管理金鑰。");
+      checkboxEl.checked = !paid;
+      return;
+    }
+    checkboxEl.disabled = true;
+    fetch(CFG.GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "admin_setPaid", adminKey: key, orderId: orderId, paid: paid }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        checkboxEl.disabled = false;
+        if (!data || !data.ok) {
+          alert("更新失敗：" + ((data && data.error) || "未知錯誤"));
+          checkboxEl.checked = !paid;
+          return;
+        }
+        var card = checkboxEl.closest(".order-card");
+        if (card) {
+          card.classList.toggle("ring-green-300", paid);
+          card.classList.toggle("bg-green-50", paid);
+          card.classList.toggle("ring-stone-200", !paid);
+        }
+      })
+      .catch(function (err) {
+        checkboxEl.disabled = false;
+        alert("更新失敗（可能是網路或 CORS）：" + err);
+        checkboxEl.checked = !paid;
+      });
+  }
+
+  function deleteOrder(orderId, customer, btn) {
+    var key = keyInput.value.trim();
+    if (!key) {
+      alert("請先在上面輸入管理金鑰。");
+      return;
+    }
+    if (!confirm("確定要刪除「" + customer + "」的訂單（" + orderId + "）嗎？\n此動作無法復原。")) {
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = "刪除中…";
+    fetch(CFG.GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "admin_deleteOrder", adminKey: key, orderId: orderId }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data || !data.ok) {
+          alert("刪除失敗：" + ((data && data.error) || "未知錯誤"));
+          btn.disabled = false;
+          btn.textContent = "🗑 刪除訂單";
+          return;
+        }
+        var card = btn.closest(".order-card");
+        if (card) card.remove();
+      })
+      .catch(function (err) {
+        alert("刪除失敗（可能是網路或 CORS）：" + err);
+        btn.disabled = false;
+        btn.textContent = "🗑 刪除訂單";
+      });
   }
 
   function esc(s) {

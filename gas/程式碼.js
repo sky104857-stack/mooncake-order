@@ -2,10 +2,11 @@
 // ---------------------------------------------------------------------------
 // 綁定的試算表會自動建立一個工作表(分頁)叫「訂單明細」,一列 = 一個品項,欄位依序:
 //   時間戳記 | 訂單編號 | 訂購人 | 電話 | 取貨日期 | 取貨時段 |
-//   內餡 | 加料 | 顆數 | 盒數 | 總顆數 | 備註 | 單顆價格 | 小計金額
+//   內餡 | 加料 | 顆數 | 盒數 | 總顆數 | 備註 | 單顆價格 | 小計金額 | 已收款
 // 一張訂單如果點了多個組合,就會拆成多列,共用同一個「訂單編號」。
-// (單顆價格／小計金額是後來加的欄位,刻意放在備註後面、表格最後,
-//  這樣舊資料列的既有欄位索引不會被打亂,只是新欄位在舊資料列上是空的。)
+// (單顆價格／小計金額／已收款是後來加的欄位,刻意放最後面,
+//  這樣舊資料列的既有欄位索引不會被打亂,只是新欄位在舊資料列上是空的。
+//  已收款是整張訂單共用的狀態,同一個訂單編號的每一列都會同步寫。)
 //
 // 定價規則(見下方 PRICE 相關常數):
 //   手工月餅(自用,只有六顆裝):任何內餡同價;原味每顆 50 元,
@@ -25,13 +26,17 @@
 //   doGet?action=blockedDates 公開讀取(訂購頁用來提示、擋選);
 //   doPost 帶 action:"admin_setBlockedDates" + adminKey 才能整批覆寫。
 //
+// 訂單管理(admin.html,都要 adminKey):
+//   doPost action:"admin_setPaid"    {orderId, paid}  — 標記/取消整張訂單已收款
+//   doPost action:"admin_deleteOrder" {orderId}        — 刪除整張訂單(所有品項列),不可復原
+//
 // 部署步驟見專案 README.md。
 // ---------------------------------------------------------------------------
 
 const SHEET_NAME = "訂單明細";
 const HEADERS = [
   "時間戳記", "訂單編號", "訂購人", "電話", "取貨日期", "取貨時段",
-  "內餡", "加料", "顆數", "盒數", "總顆數", "備註", "單顆價格", "小計金額",
+  "內餡", "加料", "顆數", "盒數", "總顆數", "備註", "單顆價格", "小計金額", "已收款",
 ];
 
 const FILLINGS = ["紅豆", "芋頭", "綠豆", "巧克力"];
@@ -151,6 +156,58 @@ function handleSetBlockedDates_(body) {
   return jsonResponse_({ ok: true, dates: cleaned });
 }
 
+// 管理頁呼叫:整張訂單(所有品項列)標記/取消已收款(需要 ADMIN_KEY)
+function handleSetPaid_(body) {
+  const key = PropertiesService.getScriptProperties().getProperty("ADMIN_KEY");
+  if (!key || body.adminKey !== key) {
+    return jsonResponse_({ ok: false, error: "unauthorized" });
+  }
+  const orderId = String(body.orderId || "").trim();
+  if (!orderId) return jsonResponse_({ ok: false, error: "缺少訂單編號" });
+  const paid = !!body.paid;
+
+  const sheet = getSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return jsonResponse_({ ok: true, updated: 0 });
+
+  const paidCol = HEADERS.indexOf("已收款") + 1; // 1-based
+  const orderIds = sheet.getRange(2, 2, lastRow - 1, 1).getValues(); // 訂單編號欄
+  let updated = 0;
+  for (let r = 0; r < orderIds.length; r++) {
+    if (String(orderIds[r][0]) === orderId) {
+      sheet.getRange(r + 2, paidCol).setValue(paid ? "TRUE" : "");
+      updated++;
+    }
+  }
+  return jsonResponse_({ ok: true, updated: updated, paid: paid });
+}
+
+// 管理頁呼叫:刪除整張訂單(所有品項列),不可復原(需要 ADMIN_KEY)
+function handleDeleteOrder_(body) {
+  const key = PropertiesService.getScriptProperties().getProperty("ADMIN_KEY");
+  if (!key || body.adminKey !== key) {
+    return jsonResponse_({ ok: false, error: "unauthorized" });
+  }
+  const orderId = String(body.orderId || "").trim();
+  if (!orderId) return jsonResponse_({ ok: false, error: "缺少訂單編號" });
+
+  const sheet = getSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return jsonResponse_({ ok: true, deleted: 0 });
+
+  const orderIds = sheet.getRange(2, 2, lastRow - 1, 1).getValues(); // 訂單編號欄
+  let deleted = 0;
+  // 從最下面往上刪,避免刪除後其餘列的列號往上移導致對不上
+  for (let r = orderIds.length - 1; r >= 0; r--) {
+    if (String(orderIds[r][0]) === orderId) {
+      sheet.deleteRow(r + 2);
+      deleted++;
+    }
+  }
+  if (deleted === 0) return jsonResponse_({ ok: false, error: "找不到這張訂單" });
+  return jsonResponse_({ ok: true, deleted: deleted });
+}
+
 // ---- Turnstile 驗證 ------------------------------------------------------
 
 function verifyTurnstile_(token) {
@@ -187,9 +244,15 @@ function doPost(e) {
       return jsonResponse_({ ok: false, error: "格式錯誤" });
     }
 
-    // 0) 管理動作(設定公休/額滿日期),跟一般訂單分開處理,不算防灌單那一套
+    // 0) 管理動作,跟一般訂單分開處理,不算防灌單那一套
     if (body.action === "admin_setBlockedDates") {
       return handleSetBlockedDates_(body);
+    }
+    if (body.action === "admin_setPaid") {
+      return handleSetPaid_(body);
+    }
+    if (body.action === "admin_deleteOrder") {
+      return handleDeleteOrder_(body);
     }
 
     // 1) 蜜罐:正常使用者看不到 website 欄位
@@ -311,7 +374,7 @@ function doPost(e) {
     const sheet = getSheet_();
     const fullRows = rows.map(function (r) {
       return [now, orderId, customer, phoneRaw, pickupDate, pickupSlot,
-        r[0], r[1], r[2], r[3], r[4], note, r[5], r[6]];
+        r[0], r[1], r[2], r[3], r[4], note, r[5], r[6], ""]; // 已收款預設空白(未收款)
     });
     sheet
       .getRange(sheet.getLastRow() + 1, 1, fullRows.length, HEADERS.length)
@@ -399,6 +462,7 @@ function doGet(e) {
           // 舊訂單(加價格欄位前)這兩格是空的,退回用目前定價規則現算
           unitPrice: Number(v[12]) || unitPrice_(String(v[7])),
           amount: Number(v[13]) || boxPrice_(String(v[7]), Number(v[8]) || 0) * (Number(v[9]) || 0),
+          paid: String(v[14]).toUpperCase() === "TRUE",
         };
       })
       .filter(function (r) {
